@@ -1,0 +1,22 @@
+{
+	"name" : "New Networked Lasers",
+	"description" : "Share your lasers with the world!",
+	"author" : "Offy and the Scooby-Doo Gang",
+	"contact" : "Ask /u/offyerrocker for help. Do Not Distribute! Private beta testing only!",
+	"version" : "0.6",
+	"hooks" : [
+		{
+			"hook_id" : "lib/managers/menumanager",
+			"script_path" : "laser_player_weapon.lua"
+		},
+		{
+			"hook_id" : "lib/units/weapons/weaponlaser",
+			"script_path" : "laser_player_weapon.lua"
+		},
+		{
+			"hook_id" : "lib/units/weapons/weaponlaser",
+			"script_path" : "WeaponLaser.lua"
+		}
+
+	]
+}
