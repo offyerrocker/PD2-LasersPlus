@@ -10,7 +10,7 @@
 			"title" : "nnl_nl_toggle_title",
 			"description" : "nnl_nl_toggle_desc",
 			"callback" : "callback_networked_lasers_toggle",
-			"value" : "enabled"
+			"value" : "networked_lasers"
 		},
 		{
 			"type" : "multiple_choice",
@@ -79,6 +79,10 @@
 			"step" : 0.05
 		},
 		{
+			"type" : "divider",
+			"size" : 16
+		},
+		{
 			"type" : "slider",
 			"id" : "nnl_team_r_menu_slider",
 			"title" : "nnl_team_r_item_title",
@@ -126,6 +130,10 @@
 			"max" : 1,
 			"step" : 0.05
 		},
+		{
+			"type" : "divider",
+			"size" : 16
+		},		
 		{
 			"type" : "slider",
 			"id" : "nnl_snpr_r_menu_slider",
@@ -175,6 +183,10 @@
 			"step" : 0.05
 		},
 		{
+			"type" : "divider",
+			"size" : 16
+		},		
+		{
 			"type" : "slider",
 			"id" : "nnl_wl_r_menu_slider",
 			"title" : "nnl_wl_r_item_title",
@@ -222,6 +234,10 @@
 			"max" : 1,
 			"step" : 0.05
 		},
+		{
+			"type" : "divider",
+			"size" : 16
+		},		
 		{
 			"type" : "slider",
 			"id" : "nnl_turr_att_r_menu_slider",
@@ -271,6 +287,10 @@
 			"step" : 0.05
 		},
 		{
+			"type" : "divider",
+			"size" : 16
+		},		
+		{
 			"type" : "slider",
 			"id" : "nnl_turr_rld_r_menu_slider",
 			"title" : "nnl_turr_rld_r_item_title",
@@ -318,7 +338,10 @@
 			"max" : 1,
 			"step" : 0.05
 		},
-	
+		{
+			"type" : "divider",
+			"size" : 16
+		},	
 		{
 			"type" : "slider",
 			"id" : "nnl_turr_ecm_r_menu_slider",
