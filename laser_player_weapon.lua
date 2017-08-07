@@ -24,7 +24,7 @@ Lasers.DefaultOpacity = 0.5
 --default opacity for lasers
 
 Lasers.update_interval = 2 --default rate of update on lasers. lower looks better. greatly affects performance! set to 0 for maximum performance (unlimited)
-Lasers.default_gradient_speed = 10 --rate of laser change between color locations- higher is faster. no additional effect on performance.
+Lasers.default_gradient_speed = 20 --rate of laser change between color locations- higher is faster. no additional effect on performance.
 
 Lasers.lowquality_gradients = false --instant switch instead of slow gradients
 
@@ -33,11 +33,31 @@ Lasers.debugLogsEnabled = false
 Lasers.dev_gradient = true
 --enables sending of gradient info through networks
 
+Lasers.last_grad = Color(0,0,0):with_alpha(0)
+
 Lasers.legacy_clients = Lasers.legacy_clients or {}
 
 Lasers.SavedTeamColors = Lasers.SavedTeamColors or {}
 
-Lasers.networked_gradients = Lasers.networked_gradients or {}
+Lasers.networked_gradients = Lasers.networked_gradients or {
+	[1] = {
+		colors = {},
+		locations = {}
+	},
+	[2] = {
+		colors = {},
+		locations = {}
+	},
+	[3] = {
+		colors = {},
+		locations = {}
+	},
+	[4] = {
+		colors = {},
+		locations = {}
+	}
+	
+}
 --todo dissect colour_to_string and rebuild for tables
 Lasers.rainbow = {
 	colors = {
@@ -66,6 +86,94 @@ Lasers.example_gradient = Lasers.example_gradient or {
 	
 	}
 }
+--Lasers._networked_gradient_string = "r:{1}|g:{2}|b:{3}|a:{4}/"
+--Lasers._networked_gradient_string = "col[n]/col[n+1]... \"
+
+function Lasers:GradientTableToString(gradient_table)
+--splits a table's contents into a string
+	local g_colors = gradient_table.colors
+	local g_locations = gradient_table.locations
+	local col_sep = "/" --color separator; this is dumb
+	local loc_sep = "^" --location separator; these are dumb
+	local loc_bgn = "l:"
+	local data_string = "" --formerly c: but not necessary anymore
+	local this_col,this_loc --and that's when i realised loc/col are mirrored
+	for k,v in ipairs(g_colors) do 
+		this_col = LuaNetworking:ColourToString(v) --takes the current color from the table
+		data_string = data_string .. this_col .. col_sep
+	end
+	data_string = data_string .. loc_bgn
+	
+	for k,v in ipairs(g_locations) do
+		this_loc = v
+		data_string = data_string .. this_loc .. loc_sep
+	end
+	--todo add idiot-proofing for malformed gradient tables
+	log("NNL: New gradient string created, called [" .. data_string .. "]")
+	return data_string
+end
+
+function Lasers:StringToGradientTable(gradient_string)
+--	Lasers.networked_gradients.colors = Lasers.networked_gradients.colors or {}
+--	Lasers.networked_gradients.locations = Lasers.networked_gradients.locations or {}
+	local split_gradient = string.split( gradient_string, "l:")
+--	log("NNL: total gradient_string is " .. gradient_string)
+	local colors = string.split( split_gradient[1], "/")
+	local locations = string.split( split_gradient[2], "%^")
+	
+	for k,v in ipairs(colors) do
+		--log("NNL: color " .. k .. " is " .. v)
+		Lasers.networked_gradients[1].colors[k] = LuaNetworking:StringToColour(v)
+	end
+	
+	for k,v in ipairs(locations) do 
+		log("NNL: location " .. k .. " is " .. v)
+		Lasers.networked_gradients[1].locations[k] = LuaNetworking:StringToColour(k)
+	end
+	
+	--[[
+	for k,v in ipairs (colors) do
+		Lasers.networked_gradients.colors[k] = colors[k]--duplicating values from table of split values "colors" to networked_gradients.colors
+		log("NNL: Doing colors: " .. colors[k])
+	end
+	
+	for k,v in ipairs (locations) do 
+		Lasers.networked_gradients.locations[k] = locations[k]
+		log("NNL: Doing locations: " .. locations[k])
+	end
+
+	local data_string = string.split(gradient_string)
+
+	local target_table = Lasers.networked_gradients --/!\ may be different location in the future
+	local colors_table = target_table.colors
+	local locations_table = target_table.locations
+	local colors_count = 0
+	local locations_count = 0
+	local last_sub = 0
+
+
+	
+--format 	c:color/color/color/l:loc^loc^loc
+
+	for c in string.gmatch(data_string, "%/") do 
+--		string.sub(data_string, last_sub, colors_count)
+		colors_count = colors_count + 1 or 0 --should be duplicating from an iterator but i'm not 
+		colors_table[colors_count] = c
+--		log("NNL: StringToGradientTable found color [" .. string.sub(data_string,colors_count) .. "]")
+	end
+
+	for d in string.gmatch(data_string, "%^") do --i'm not using l as an iterator. i refuse.
+		locations_count = locations_count + 1 or 0 
+		locations_table[locations_count] = d
+--		log("NNL: StringToGradientTable found location [" .. string.sub(data_string,locations_count) .. "]")
+	end
+	
+	--return --i guess
+	
+	--]]
+end
+	
+
 --[[
 # # NEW: Custom laser gradients ##
 * Below, in the table "my_gradient" you can set your own color-changing preset. Lasers are always rendered as a line of one color, not a "true" gradient,
@@ -270,7 +378,7 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 
 
 	if laser._is_npc then
-
+		log("NNL: Is indeed npc")	
 		local criminal_name = Lasers:GetCriminalNameFromLaserUnit( laser )
 		if not criminal_name then
 			return
@@ -292,10 +400,12 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 		
 		if Lasers:IsTeamNetworked() then
 			--get from stored team lasers
+			
 			local color = Lasers.SavedTeamColors[criminal_name]
 			nnl_log("NNL: criminal_name is " .. criminal_name)
-			if color then 
-				SetColourOfLaser(laser, unit, t, dt, color)
+			if Lasers.networked_gradients[criminal_name] then
+				Lasers:SetGradientToLaser( laser, unit, t, dt, criminal_name)
+			elseif color then 
 				--/!\ will crash! obsolete!
 				Lasers:SetColourOfLaser( laser, unit, t, dt, color )
 				
@@ -331,10 +441,12 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 		nnl_log("NNL: Found Offy!")
 		return
 	elseif Lasers.dev_gradient then
-		local override_color = GradientStep( t, Lasers.my_gradient, speed)
-		Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
+--		log("NNL: Doing Dev_Gradient")
+			Lasers:SetColourOfLaser (laser, unit, t, dt, "gradient")
+		return
+--		Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 	end
-
+	log("NNL: Doing nothing in updatelaser")
 	Lasers:SetColourOfLaser( laser, unit, t, dt )
 
 end
@@ -358,11 +470,12 @@ function GradientStep( t, gradient_table, speed ) --uses a preset table instead 
 	local _t = (t * speed) % 100 --by default, 100 for location values. todo: change by max location size
 	local current_location
 	local color_count
-	local last_grad
+--	Lasers.last_grad = Lasers.last_grad or Color(0,0,0):with_alpha(0)
 	nnl_log("NNL: _t /smoothness, _t = " .. math.floor(_t % smoothness) .. "|" .. _t)
 	if smoothness == 0 or ( math.floor(_t) % smoothness) == 0 then --luckily lua doesn't fall for div_by_0 errors :^)
-		
-		last_grad = last_grad or Color(0,0,0):with_alpha(0) 
+	
+	
+--		last_grad = last_grad or Color(0,0,0):with_alpha(0) 
 
 
 		for k,v in ipairs(colors) do 
@@ -410,14 +523,14 @@ function GradientStep( t, gradient_table, speed ) --uses a preset table instead 
 			nu_blue = col_1.blue + ( (b_diff * _t2) / color_dur )
 			nu_alpha = col_1.alpha + ( (a_diff * _t2) / color_dur )
 			local override_color = Color(nu_red,nu_green,nu_blue):with_alpha(nu_alpha) or Color(1,1,1):with_alpha(1)
-			last_grad = override_color
-			
+			Lasers.last_grad = override_color
 			--nnl_log("NNL: Col_1 = " .. LuaNetworking:ColourToString(col_1) .. "|| Col_2 = " .. LuaNetworking:ColourToString(col_2) .. "|| New_col = " .. LuaNetworking:ColourToString(override_color))
 			--nnl_log("NNL: R/G/B/A diff: r " .. r_diff .. " |g " .. g_diff .. " |b " .. b_diff .. " |a " .. a_diff )
 		else 
-			color_override = colors[current_location] or Color(1,1,1):with_alpha(1)
+			override_color = colors[current_location] --or Color(1,1,1):with_alpha(1)
 		end
 	end
+--	log("NNL: grad color is " .. LuaNetworking:ColourToString(override_color or Lasers.last_grad))
 	return override_color or Lasers.last_grad
 end
 
@@ -427,25 +540,33 @@ function Lasers:SetColorOfLaser( laser, unit, t, dt, override_color )
 	return
 end
 function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
-	
+--	log("NNL: Doing setlasercolor with col " .. LuaNetworking:ColourToString(override_color))
+
+
 	if override_color then
-		if override_color ~= "rainbow" then
+		if override_color == "gradient" then
+			override_color = GradientStep( t, Lasers.example_gradient, speed)
+--			log("NNL: Did gradient override in setcolour.")
+			laser:set_color( override_color )
+			return
+		elseif override_color == "rainbow" then
+--			log("NNL: Using rainbow color")
 			override_color = Lasers:GradientStep(t, Lasers.rainbow, Lasers.default_gradient_speed)
 			laser:set_color( override_color )
+			return
 		else
-			laser:set_color_by_theme( override_color )
+--		log("NNL: Using supplied override color")
+			laser:set_color( override_color )
+			return
 		end
---			laser:set_color(override_color)
-		return
-	end
-
-	
-	
-	if not Lasers:IsTeamGradient() then
+--			laser:set_color_by_theme(override_color)
+	elseif not Lasers:IsTeamGradient() then
 		laser:set_color(Lasers:GetPlayerLaserColor()) --Lasers:GetColor( Lasers.DefaultOpacity ) )
-		log("NNL: No gradient? Using player color")
+--		log("NNL: No gradient? Using player color")
 		return
 	else
+--		log("NNL: Not even team gradient? okay.")
+		laser:set_color( override_color)
 		--/!\ under construction! fix gradient here!
 --		Lasers:GradientStep. calc gradients for team here??? i guess???
 	--	laser:set_color( Lasers.Color:GetRainbowColor( t, Lasers:RainbowSpeed() ):with_alpha(Lasers.DefaultOpacity) )
@@ -482,11 +603,19 @@ Hooks:Add("WeaponLaserSetOn", "WeaponLaserSetOn_", function(laser)
 --			col_str = "rainbow"
 --		end 
 --^^reenable this code here 
+	local my_gradient_string = Lasers:GradientTableToString(Lasers.my_gradient) or false
+	log("NNL: Completed table to string conversion. Result: " .. my_gradient_string )
+--	log("NNL: Completed string to table conversion. Result: " .. Lasers:StringToGradientTable(test_string) )
 		if Lasers.settings.networked_lasers then
-			if not Lasers.dev_gradient then 
-				LuaNetworking:SendToPeers(Lasers.LuaNetID, col_str)
+			if Lasers.dev_gradient and my_gradient_string then
+				LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID_gradient, my_gradient_string ) --or my gradient pls
 			else
-				LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID_gradient, Lasers.my_gradient ) --or my gradient pls
+				LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID, col_str)
+			end
+			
+			for k,v in pairs(Lasers.legacy_clients) do
+				log("Sending legacy data to client: [" .. k .. "]")
+				LuaNetworking:SendToPeer(k,Lasers.Lasers.LegacyID, col_str)
 			end
 		end
 	end
@@ -543,9 +672,14 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 		
 --		local char = criminals_manager:character_name_by_peer_id(sender)
 		
+		local incoming_gradient_string = message 
+		Lasers:StringToGradientTable(incoming_gradient_string)
+		
+		--v unstable
+		
 		local received_gradient = data
 		if received_gradient and received_gradient ~= "none" then
-			Lasers.networked_gradients[sender] = received_gradient or nil	
+			Lasers.networked_gradients[sender] = received_gradient or nil
 		end
 			--[[
 		local col = data
