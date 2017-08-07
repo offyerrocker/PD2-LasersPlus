@@ -545,7 +545,7 @@ function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 
 	if override_color then
 		if override_color == "gradient" then
-			override_color = GradientStep( t, Lasers.example_gradient, speed)
+			override_color = GradientStep( t, Lasers.my_gradient, speed)
 --			log("NNL: Did gradient override in setcolour.")
 			laser:set_color( override_color )
 			return
