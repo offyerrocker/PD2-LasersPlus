@@ -103,13 +103,16 @@ function Lasers:GradientTableToString(gradient_table)
 	local data_string = "" --formerly c: but not necessary anymore
 	local this_col,this_loc --and that's when i realised loc/col are mirrored
 	for k,v in ipairs(g_colors) do 
+		log("NNL: Colors for loop:" .. LuaNetworking:ColourToString(v) .. " at #" .. k)
 		this_col = LuaNetworking:ColourToString(v) --takes the current color from the table
 		data_string = data_string .. this_col .. col_sep
 	end
 	data_string = data_string .. loc_bgn
 	
 	for k,v in ipairs(g_locations) do
+		log("NNL: Locations for loop:" .. v .. ", " .. k)
 		this_loc = v
+--		log("NNL: this loc: " .. this_loc)
 		data_string = data_string .. this_loc .. loc_sep
 	end
 	--todo add idiot-proofing for malformed gradient tables
@@ -388,7 +391,7 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 		nnl_log("NNL: Found Offy!")
 		return
 	elseif Lasers.dev_gradient then
-		log("NNL: Doing Dev_Gradient")
+--		log("NNL: Doing Dev_Gradient generic")
 			Lasers:SetColourOfLaser (laser, unit, t, dt, "gradient")
 		return
 --		Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
@@ -494,7 +497,7 @@ function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 	if override_color then
 		if override_color == "gradient" then
 			override_color = GradientStep( t, Lasers.my_gradient, 20)
-			log("NNL: Did gradient override in setcolour.")
+	--		log("NNL: Did gradient override in setcolour.")
 			laser:set_color( override_color )
 			return
 		elseif override_color == "rainbow" then
@@ -569,6 +572,8 @@ Hooks:Add("WeaponLaserSetOn", "WeaponLaserSetOn_", function(laser)
 --	log("NNL: Completed string to table conversion. Result: " .. Lasers:StringToGradientTable(test_string) )
 		if Lasers.settings.networked_lasers then
 			if Lasers.dev_gradient and my_gradient_string then
+				LuaNetworking:SendToPeers( Lasers.LuaNetID, my_gradient_string)-- or col_str)
+--[[
 				LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID, my_gradient_string )
 			else
 				LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID, col_str)
@@ -576,7 +581,8 @@ Hooks:Add("WeaponLaserSetOn", "WeaponLaserSetOn_", function(laser)
 			
 			for k,v in pairs(Lasers.legacy_clients) do
 				log("Sending legacy data to client: [" .. k .. "]")
-				LuaNetworking:SendToPeer(k,Lasers.Lasers.LegacyID, col_str)
+				LuaNetworking:SendToPeer(k,Lasers.LegacyID, col_str)
+--]]
 			end
 		end
 	end
@@ -584,7 +590,7 @@ Hooks:Add("WeaponLaserSetOn", "WeaponLaserSetOn_", function(laser)
 end)
 
 Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, message, data)
---	log("NNL: sender is " .. sender )
+	log("NNL: sender is " .. sender )
 	if message == Lasers.LuaNetID or message == Lasers.LegacyID then
 		log("NNL: Received data from sender.")
 		local criminals_manager = managers.criminals
