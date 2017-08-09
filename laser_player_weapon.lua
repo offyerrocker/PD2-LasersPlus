@@ -97,7 +97,7 @@ function Lasers:GradientTableToString(gradient_table)
 --splits a table's contents into a string
 	local g_colors = gradient_table.colors
 	local g_locations = gradient_table.locations
-	local col_sep = "/" --color separator; this is dumb
+	local col_sep = "%$" --color separator; this is dumb
 	local loc_sep = "^" --location separator; these are dumb
 	local loc_bgn = "l:"
 	local data_string = "" --formerly c: but not necessary anymore
@@ -127,7 +127,7 @@ function Lasers:StringToGradientTable(gradient_string)
 
 	local split_gradient = string.split( gradient_string, "l:")
 --	log("NNL: total gradient_string is " .. gradient_string)
-	local colors = string.split( split_gradient[1], "/")
+	local colors = string.split( split_gradient[1], "%$")
 	local locations = string.split( split_gradient[2], "%^")
 	
 	for k,v in ipairs(colors) do
@@ -360,7 +360,7 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 					Lasers:SetColourOfLaser( laser, unit, t, dt, color )
 					return
 				end
-				log("NNL: Did not find saved team color gradient.")
+--				log("NNL: Did not find saved team color gradient.")
 			end
 			if Lasers:IsTeamUniform() then 
 				color = Lasers:GetPeerColor(criminal_name) 
@@ -609,7 +609,7 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 			col = Lasers:StringToGradientTable(data)
 		elseif data ~= "gradient" then
 			log("NNL: Did not find data.")
-			col = Lasers:StringToGradientTable(data)--LuaNetworking:StringToColour(data)
+			col = LuaNetworking:StringToColour(data)
 		end
 --type(data) == "string" and 
 
