@@ -510,10 +510,14 @@ function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 			override_color = Lasers:GradientStep(t, Lasers.rainbow, Lasers.default_gradient_speed)
 			laser:set_color( override_color )
 			return
-		elseif type(override_color) == "string" then
+		elseif type(override_color) == "table" then
+			 new_color = Gradient_Step(t, override_color, 20)
+			 laser:set_color( new_color )
+		--[[
 			new_gradient = Lasers:StringToGradientTable(override_color)
 			new_color = GradientStep( t, new_gradient, 20 )
 			laser:set_color( new_color ) 
+			--]]
 --			Lasers:StringToGradientTable(incoming_gradient_string)
 		else
 --			log("NNL: Using supplied override color with col ") --[" .. override_color .. "]") --LuaNetworking:ColourToString(override_color))
@@ -589,6 +593,7 @@ end)
 Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, message, data)
 	log("NNL: sender is " .. sender )
 	if message == Lasers.LuaNetID or message == Lasers.LegacyID then
+		
 		local criminals_manager = managers.criminals
 		if not criminals_manager then
 			return
@@ -604,53 +609,17 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 		
 		local char = criminals_manager:character_name_by_peer_id(sender)
 		local col = data
-		if data ~= "gradient" then
+		
+		if string.find(data, "l:") then
+			col = Lasers:StringToGradientTable(data)
+		elseif data ~= "gradient" then
 			col = LuaNetworking:StringToColour(data)
 		end
+--type(data) == "string" and 
 
 		if char then
 			Lasers.SavedTeamColors[char] = col
 		end
-	end
-		Lasers.legacy_clients[sender] = nil
---		log("NNL: Cleared peerid [" .. sender .. "] from legacy_clients list via gradient")
-		
-		local criminals_manager = managers.criminals
-		if not criminals_manager then 
-			return
-		end
-	
---		local incoming_gradient_string = data 
---		Lasers:StringToGradientTable(incoming_gradient_string,sender)
-		
-		local char = criminals_manager:character_name_by_peer_id(sender)
-		local col = data
-		if data ~= "gradient" then
-			col = data
-		end
-
-		if char then
-			Lasers.SavedTeamColors[char] = col
-		end
-		
-		--v unstable
-		
---		local received_gradient = data
---		if received_gradient and received_gradient ~= "none" then
---			Lasers.networked_gradients[sender] = received_gradient or nil
---		end
-
-
-			--[[
-		local col = data
-		if data ~= "none" then
-			col = LuaNetworking:StringToColour(data)
-		end
-		
-		if char then
-			Lasers.SavedTeamColors[char] = col
-		end
-		--]]
 	end
 
 end)
