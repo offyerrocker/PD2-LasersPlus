@@ -65,9 +65,9 @@ Lasers.networked_gradients = Lasers.networked_gradients or {
 --done dissect colour_to_string and rebuild for tables
 Lasers.rainbow = {
 	colors = {
-		[1] = Color(1,0,0):with_alpha(DefaultOpacity),
-		[2] = Color(0,1,0):with_alpha(DefaultOpacity),
-		[3] = Color(0,0,1):with_alpha(DefaultOpacity)
+		[1] = Color(1,1,0):with_alpha(DefaultOpacity),
+		[2] = Color(0,1,1):with_alpha(DefaultOpacity),
+		[3] = Color(1,0,1):with_alpha(DefaultOpacity)
 	},
 	locations = {
 		[1] = 0,
@@ -132,6 +132,7 @@ function Lasers:StringToGradientTable(gradient_string)
 --	log("NNL: total gradient_string is " .. gradient_string)
 	local colors = string.split( split_gradient[1], "%$")
 	local locations = string.split( split_gradient[2], "%^")
+--	log("NNL: locations string is " .. locations)
 	
 	for k,v in ipairs(colors) do
 		--log("NNL: color " .. k .. " is " .. v)
@@ -141,7 +142,7 @@ function Lasers:StringToGradientTable(gradient_string)
 	
 	for k,v in ipairs(locations) do 
 		log("NNL: location " .. k .. " is " .. v)
-		gradient_data.locations[k] = LuaNetworking:StringToColour(v)
+		gradient_data.locations[k] = tonumber(v)
 --		Lasers.networked_gradients[peerid].locations[k] = LuaNetworking:StringToColour(k)
 	end
 	return gradient_data
@@ -173,9 +174,9 @@ by using "with_alpha" at the end of your color.
 --]]
 Lasers.my_gradient = Lasers.my_gradient or {
 	colors = {
-		[1] = Color(1,0,0):with_alpha(0.7),
-		[2] = Color(0,1,0):with_alpha(0.7),
-		[3] = Color(0,0,1):with_alpha(0.7)
+		[1] = Color(0.5,0,0):with_alpha(0.5),
+		[2] = Color(0,0.2,0.7):with_alpha(0.7),
+		[3] = Color(1,0.3,0):with_alpha(0.3)
 	},
 	locations = {
 		[1] = 0,
@@ -359,7 +360,7 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 			if Lasers.dev_gradient then --Laser:IsTeamGradient() then --and Lasers.networked_gradients[1].criminal_name then 
 				local color = Lasers.SavedTeamColors[criminal_name]
 				if color then
-					log("NNL: Found saved team color gradient.")
+--					log("NNL: Found saved team color gradient.")
 					Lasers:SetColourOfLaser( laser, unit, t, dt, color )
 					return
 				end
@@ -400,7 +401,7 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 	Lasers:SetColourOfLaser( laser, unit, t, dt )
 
 end
-
+--[[
 function SetGradientToLaser( laser, unit, t, dt, peer )
 	override_color = GradientStep( t, Lasers.networked_gradients[peer], Lasers.default_gradient_speed )
 -- retrieve and send gradient information from the table, and send it to the other function
@@ -416,6 +417,16 @@ function SetGradientToLaser( laser, unit, t, dt, peer )
 	end
 	laser:set_color( override_color )
 end
+--]]
+function log_table(table_name)
+	local log_str = "NNL: Logging table..." 
+	local log_k,log_v
+	for k,v in pairs(table_name) do
+		log_str = (log_str .. "|" .. k .. "=" .. v .."|")			
+	end
+	log(log_str)
+end
+
 
 function GradientStep( t, gradient_table, override_speed ) --uses a preset table instead of input specific values
 	local smoothness = Lasers.update_interval or 0		--frequency of laser updates, calculated per frame. the lower, the better the laser looks. affects performance!
@@ -423,8 +434,8 @@ function GradientStep( t, gradient_table, override_speed ) --uses a preset table
 	local locations = gradient_table.locations
 	local speed = override_speed or Lasers.default_gradient_speed or 1
 	local _t = (t * speed) % 100 --by default, 100 for location values. todo: change by max location size
-	local current_location
-	local color_count
+	local current_location 
+	local color_count 
 	nnl_log("NNL: _t /smoothness, _t = " .. math.floor(_t % smoothness) .. "|" .. _t)
 	if smoothness == 0 or ( math.floor(_t) % smoothness) == 0 then --luckily lua doesn't fall for div_by_0 errors :^)
 	
@@ -432,18 +443,21 @@ function GradientStep( t, gradient_table, override_speed ) --uses a preset table
 			color_count = k
 		end
 		if color_count <= 1 then
-			nnl_log("NNL: My custom gradient is improperly formatted/has incorrect # of colors or locations!")
+			log("NNL: My custom gradient is improperly formatted/has incorrect # of colors or locations!")
 			return Lasers.example_gradient
 		end
 		--get current location based on time
 		for k,v in ipairs(locations) do
 			--nnl_log("NNL: v = " .. v .. ", t = " .. _t .. ", k = " .. k)
-			if v > _t then --if location value is higher than time
+			local new_v = v or 34
+			if new_v > _t then --if location value is higher than time
 				break
 			else --could be end instead of else
+--				log("NNL: setting current_location to " .. k )
 				current_location = k
 			end
 		end
+
 		
 		if not Lasers.lowquality_gradients then 
 
@@ -506,8 +520,8 @@ function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 			laser:set_color( override_color )
 			return
 		elseif type(override_color) == "table" then
-			log("NNL: Writing color from table via Gradient_Step.")
-			 new_color = Gradient_Step(t, override_color, 20)
+--			log("NNL: Writing color from table via GradientStep.")
+			 new_color = GradientStep(t, override_color, 20)
 			 laser:set_color( new_color )
 		--[[
 			new_gradient = Lasers:StringToGradientTable(override_color)
