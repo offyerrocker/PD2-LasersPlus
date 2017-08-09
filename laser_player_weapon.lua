@@ -26,12 +26,12 @@ Lasers.DefaultOpacity = 0.5
 Lasers.update_interval = 2 --default rate of update on lasers. lower looks better. greatly affects performance! set to 0 for maximum performance (unlimited)
 Lasers.default_gradient_speed = 20 --rate of laser change between color locations- higher is faster. no additional effect on performance.
 
-Lasers.lowquality_gradients = false --instant switch instead of slow gradients
+Lasers.lowquality_gradients = false --local option, does not affect what others see. instant switch instead of slow gradients
 
 Lasers.debugLogsEnabled = false
 
-Lasers.dev_gradient = true
---enables sending of gradient info through networks
+Lasers.dev_gradient = false
+--enables sending of gradient info through networks, and viewing of others' gradient lasers 
 
 Lasers.last_grad = Color(0,0,0):with_alpha(0)
 
@@ -41,18 +41,22 @@ Lasers.SavedTeamColors = Lasers.SavedTeamColors or {}
 
 Lasers.networked_gradients = Lasers.networked_gradients or {
 	[1] = {
+		active = false,
 		colors = {},
 		locations = {}
 	},
 	[2] = {
+		active = false,
 		colors = {},
 		locations = {}
 	},
 	[3] = {
+		active = false,
 		colors = {},
 		locations = {}
 	},
 	[4] = {
+		active = false,
 		colors = {},
 		locations = {}
 	}
@@ -113,9 +117,9 @@ function Lasers:GradientTableToString(gradient_table)
 	return data_string
 end
 
-function Lasers:StringToGradientTable(gradient_string)
---	Lasers.networked_gradients.colors = Lasers.networked_gradients.colors or {}
---	Lasers.networked_gradients.locations = Lasers.networked_gradients.locations or {}
+function Lasers:StringToGradientTable(gradient_string,peerid)
+--given a formatted gradient-string and a criminal number, unpacks the gradient and writes it directly to the storage table
+--does not return a value
 	local split_gradient = string.split( gradient_string, "l:")
 --	log("NNL: total gradient_string is " .. gradient_string)
 	local colors = string.split( split_gradient[1], "/")
@@ -123,54 +127,14 @@ function Lasers:StringToGradientTable(gradient_string)
 	
 	for k,v in ipairs(colors) do
 		--log("NNL: color " .. k .. " is " .. v)
-		Lasers.networked_gradients[1].colors[k] = LuaNetworking:StringToColour(v)
+		Lasers.networked_gradients[peerid].colors[k] = LuaNetworking:StringToColour(v)
 	end
 	
 	for k,v in ipairs(locations) do 
 		log("NNL: location " .. k .. " is " .. v)
-		Lasers.networked_gradients[1].locations[k] = LuaNetworking:StringToColour(k)
+		Lasers.networked_gradients[peerid].locations[k] = LuaNetworking:StringToColour(k)
 	end
-	
-	--[[
-	for k,v in ipairs (colors) do
-		Lasers.networked_gradients.colors[k] = colors[k]--duplicating values from table of split values "colors" to networked_gradients.colors
-		log("NNL: Doing colors: " .. colors[k])
-	end
-	
-	for k,v in ipairs (locations) do 
-		Lasers.networked_gradients.locations[k] = locations[k]
-		log("NNL: Doing locations: " .. locations[k])
-	end
-
-	local data_string = string.split(gradient_string)
-
-	local target_table = Lasers.networked_gradients --/!\ may be different location in the future
-	local colors_table = target_table.colors
-	local locations_table = target_table.locations
-	local colors_count = 0
-	local locations_count = 0
-	local last_sub = 0
-
-
-	
---format 	c:color/color/color/l:loc^loc^loc
-
-	for c in string.gmatch(data_string, "%/") do 
---		string.sub(data_string, last_sub, colors_count)
-		colors_count = colors_count + 1 or 0 --should be duplicating from an iterator but i'm not 
-		colors_table[colors_count] = c
---		log("NNL: StringToGradientTable found color [" .. string.sub(data_string,colors_count) .. "]")
-	end
-
-	for d in string.gmatch(data_string, "%^") do --i'm not using l as an iterator. i refuse.
-		locations_count = locations_count + 1 or 0 
-		locations_table[locations_count] = d
---		log("NNL: StringToGradientTable found location [" .. string.sub(data_string,locations_count) .. "]")
-	end
-	
-	--return --i guess
-	
-	--]]
+	Lasers.networked_gradients[peerid].active = true
 end
 	
 
@@ -195,25 +159,17 @@ by using "with_alpha" at the end of your color.
 # TL;DR:
 * Set colors in R/G/B format like shown in "example_gradient."
 * Set locations, or at what time the gradient displays after the previous one.
-
-
 --]]
 Lasers.my_gradient = Lasers.my_gradient or {
 	colors = {
-		[1] = Color(1,0.2,1):with_alpha(1),
-		[2] = Color(1,0.2,1):with_alpha(0.07),
-		[3] = Color(0,0,1):with_alpha(1),
-		[4] = Color(0,0,1):with_alpha(0.07),
-		[5] = Color(0.2,1,1):with_alpha(1),
-		[6] = Color(0.2,1,1):with_alpha(0.07)
+		[1] = Color(1,0,0):with_alpha(0.7),
+		[2] = Color(0,1,0):with_alpha(0.7),
+		[3] = Color(0,0,1):with_alpha(0.7),
 	},
 	locations = {
 		[1] = 0,
-		[2] = 25,
-		[3] = 30,
-		[4] = 50,
-		[5] = 55,
-		[6] = 75
+		[2] = 33,
+		[3] = 66
 	}
 	
 } or Lasers.example_gradient
@@ -244,9 +200,7 @@ function Lasers:IsRainbow()
 end
 
 function Lasers:GetPlayerLaserColor()
---	if not Lasers.settings.own_red then
-		Lasers:Load()
---	end
+	Lasers:Load()
 	return Color(Lasers.settings.own_red,Lasers.settings.own_green,Lasers.settings.own_blue):with_alpha(Lasers.settings.own_alpha) or Color(1,1,1):with_alpha(1)
 end
 
@@ -335,17 +289,6 @@ function Lasers:GetCriminalNameFromLaserUnit( laser )
 	return nil
 
 end
---[[
-local t = {}                   -- table to store the indices
-    local i = 0
-    while true do
-      i = string.find(s, "\n", i+1)    -- find 'next' newline
-      if i == nil then break end
-      table.insert(t, i)
-    end
-]]
-
---function Lasers:RGBAtoString(color,alpha)
 
 function Lasers:CheckWeaponForLasers( weapon_base, key )
 
@@ -378,7 +321,7 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 
 
 	if laser._is_npc then
-		log("NNL: Is indeed npc")	
+--		log("NNL: Is indeed npc")	
 		local criminal_name = Lasers:GetCriminalNameFromLaserUnit( laser )
 		if not criminal_name then
 			return
@@ -403,18 +346,17 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 			
 			local color = Lasers.SavedTeamColors[criminal_name]
 			nnl_log("NNL: criminal_name is " .. criminal_name)
-			if Lasers.networked_gradients[criminal_name] then
+			if Lasers.networked_gradients[criminal_name].active then
+			log("NNL: Networked gradients are go")
 				Lasers:SetGradientToLaser( laser, unit, t, dt, criminal_name)
 			elseif color then 
 				--/!\ will crash! obsolete!
 				Lasers:SetColourOfLaser( laser, unit, t, dt, color )
 				
-			elseif Laser:IsTeamGradient() then --and Lasers.networked_gradients[1].criminal_name then 
-				SetGradientToLaser( laser, unit, t, dt, criminal_name)
---				local override_color = GradientStep( t, Lasers.networked_gradients[criminal_name], speed)
---				Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
---				laser:set_color_by_theme( color )
-		
+			elseif Lasers.dev_gradient then --Laser:IsTeamGradient() then --and Lasers.networked_gradients[1].criminal_name then 
+				--SetGradientToLaser( laser, unit, t, dt, criminal_name)
+				Lasers:SetColourOfLaser( laser, unit, t, dt, "gradient")
+				--if teammate has gradient laser, do that
 				return
 			elseif Lasers:IsTeamUniform() then 
 				color = Lasers:GetPeerColor(criminal_name) 
@@ -422,12 +364,13 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 				--this one already sets the color itself
 			elseif Lasers:IsTeamCustom() then 
 				color = Lasers:GetTeamLaserColor()
-			elseif Laser:IsTeamDisabled() then 
+			elseif Lasers:IsTeamDisabled() then 
 				color = Color(0,0,0):with_alpha(0)
 			else 
 				nnl_log("NNL: Couldn't identify team laser type! How odd!")
 				color = Color(1,0.6,0.8):with_alpha(1)
 			end
+			--else if disabled setcolouroflaser default
 				Lasers:SetColourOfLaser( laser, unit, t, dt, color )
 				--should be doing this with "or" operator and conditions
 			return 
@@ -452,7 +395,6 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 end
 
 function SetGradientToLaser( laser, unit, t, dt, peer )
-
 	override_color = GradientStep( t, Lasers.networked_gradients[criminal_name], Lasers.default_gradient_speed )
 -- retrieve and send gradient information from the table, and send it to the other function
 	if not override_color then
@@ -470,14 +412,9 @@ function GradientStep( t, gradient_table, speed ) --uses a preset table instead 
 	local _t = (t * speed) % 100 --by default, 100 for location values. todo: change by max location size
 	local current_location
 	local color_count
---	Lasers.last_grad = Lasers.last_grad or Color(0,0,0):with_alpha(0)
 	nnl_log("NNL: _t /smoothness, _t = " .. math.floor(_t % smoothness) .. "|" .. _t)
 	if smoothness == 0 or ( math.floor(_t) % smoothness) == 0 then --luckily lua doesn't fall for div_by_0 errors :^)
 	
-	
---		last_grad = last_grad or Color(0,0,0):with_alpha(0) 
-
-
 		for k,v in ipairs(colors) do 
 			color_count = k
 		end
@@ -540,9 +477,6 @@ function Lasers:SetColorOfLaser( laser, unit, t, dt, override_color )
 	return
 end
 function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
---	log("NNL: Doing setlasercolor with col " .. LuaNetworking:ColourToString(override_color))
-
-
 	if override_color then
 		if override_color == "gradient" then
 			override_color = GradientStep( t, Lasers.my_gradient, speed)
@@ -555,8 +489,11 @@ function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 			laser:set_color( override_color )
 			return
 		else
---		log("NNL: Using supplied override color")
+--			log("NNL: Using supplied override color with col ") --[" .. override_color .. "]") --LuaNetworking:ColourToString(override_color))
+			override_color = override_color or Color(0,0,0):with_alpha(1)
 			laser:set_color( override_color )
+
+			--laser:set_color( Color(0,0,0):with_alpha(1))
 			return
 		end
 --			laser:set_color_by_theme(override_color)
@@ -651,19 +588,6 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 	elseif message == Lasers.LuaNetID_gradient then
 		legacy_clients[sender] = nil
 		log("NNL: Cleared peerid [" .. sender .. "] from legacy_clients list via gradient")
-			--[[
-				message 1:local n = num of colors
-				
-				message 2: color2
-				...
-				message n: colorn
-				
-				message n+1: position 1
-				...
-				message 2n + 1: position n
-			
-			--]]
-
 	
 		local criminals_manager = managers.criminals
 		if not criminals_manager then 
@@ -673,7 +597,7 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 --		local char = criminals_manager:character_name_by_peer_id(sender)
 		
 		local incoming_gradient_string = message 
-		Lasers:StringToGradientTable(incoming_gradient_string)
+		Lasers:StringToGradientTable(incoming_gradient_string,sender)
 		
 		--v unstable
 		
@@ -692,7 +616,5 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 		end
 		--]]
 	end
-	
-	--else add person to legacy list once i add that
 
 end)
