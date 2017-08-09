@@ -351,26 +351,18 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 
 		if Lasers:IsTeamNetworked() then
 			--get from stored team lasers
-			
 			local color = Lasers.SavedTeamColors[criminal_name]
 			nnl_log("NNL: criminal_name is " .. criminal_name)				
 			if Lasers.dev_gradient then --Laser:IsTeamGradient() then --and Lasers.networked_gradients[1].criminal_name then 
-				--SetGradientToLaser( laser, unit, t, dt, criminal_name)
-				peer_id = 2 -- CriminalsManager:character_peer_id_by_name(criminal_name)
-				--/!\ CAUTION! Crashes!
-				log("NNL: Criminal_name, peer_id = " .. criminal_name .. ", " .. peer_id)
-				log("NNL: active = " .. Lasers.networked_gradients[peer_id].active )
-				if Lasers.networked_gradients[peer_id].active then --normally criminal_name
-					log("NNL: Networked gradients are go")
-					--instead, use setgradienttolaser to parse the laser color from the string stored in "char"
-					Lasers:SetGradientToLaser( laser, unit, t, dt, peer_id)
-					--above function directly sets laser color, bypassing the need for setcoloroflaser or return 
+				local color = Lasers.SavedTeamColors[criminal_name]
+				if color then
+					log("NNL: Found saved team color gradient.")
+					Lasers:SetColourOfLaser( laser, unit, t, dt, color )
 					return
-				end	
+				end
+				log("NNL: Did not find saved team color gradient.")
 			end
-			if color then 
-				Lasers:SetColourOfLaser( laser, unit, t, dt, color )
-			elseif Lasers:IsTeamUniform() then 
+			if Lasers:IsTeamUniform() then 
 				color = Lasers:GetPeerColor(criminal_name) 
 				return
 					--above function directly sets laser color, bypassing the need for setcoloroflaser or return 
@@ -396,7 +388,7 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 		nnl_log("NNL: Found Offy!")
 		return
 	elseif Lasers.dev_gradient then
---		log("NNL: Doing Dev_Gradient")
+		log("NNL: Doing Dev_Gradient")
 			Lasers:SetColourOfLaser (laser, unit, t, dt, "gradient")
 		return
 --		Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
@@ -502,15 +494,16 @@ function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 	if override_color then
 		if override_color == "gradient" then
 			override_color = GradientStep( t, Lasers.my_gradient, 20)
---			log("NNL: Did gradient override in setcolour.")
+			log("NNL: Did gradient override in setcolour.")
 			laser:set_color( override_color )
 			return
 		elseif override_color == "rainbow" then
---			log("NNL: Using rainbow color")
+			log("NNL: Using rainbow color")
 			override_color = Lasers:GradientStep(t, Lasers.rainbow, Lasers.default_gradient_speed)
 			laser:set_color( override_color )
 			return
 		elseif type(override_color) == "table" then
+			log("NNL: Writing color from table via Gradient_Step.")
 			 new_color = Gradient_Step(t, override_color, 20)
 			 laser:set_color( new_color )
 		--[[
@@ -591,9 +584,9 @@ Hooks:Add("WeaponLaserSetOn", "WeaponLaserSetOn_", function(laser)
 end)
 
 Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, message, data)
-	log("NNL: sender is " .. sender )
+--	log("NNL: sender is " .. sender )
 	if message == Lasers.LuaNetID or message == Lasers.LegacyID then
-		
+		log("NNL: Received data from sender.")
 		local criminals_manager = managers.criminals
 		if not criminals_manager then
 			return
@@ -610,10 +603,13 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 		local char = criminals_manager:character_name_by_peer_id(sender)
 		local col = data
 		
+		
 		if string.find(data, "l:") then
+			log("NNL: Successfully received and parsed data")
 			col = Lasers:StringToGradientTable(data)
 		elseif data ~= "gradient" then
-			col = LuaNetworking:StringToColour(data)
+			log("NNL: Did not find data.")
+			col = Lasers:StringToGradientTable(data)--LuaNetworking:StringToColour(data)
 		end
 --type(data) == "string" and 
 
