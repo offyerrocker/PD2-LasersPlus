@@ -30,7 +30,7 @@ Lasers.lowquality_gradients = false --local option, does not affect what others 
 
 Lasers.debugLogsEnabled = false
 
-Lasers.dev_gradient = false
+Lasers.dev_gradient = true
 --enables sending of gradient info through networks, and viewing of others' gradient lasers 
 
 Lasers.last_grad = Color(0,0,0):with_alpha(0)
@@ -62,7 +62,7 @@ Lasers.networked_gradients = Lasers.networked_gradients or {
 	}
 	
 }
---todo dissect colour_to_string and rebuild for tables
+--done dissect colour_to_string and rebuild for tables
 Lasers.rainbow = {
 	colors = {
 		[1] = Color(1,0,0):with_alpha(DefaultOpacity),
@@ -345,23 +345,22 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 			--get from stored team lasers
 			
 			local color = Lasers.SavedTeamColors[criminal_name]
-			nnl_log("NNL: criminal_name is " .. criminal_name)
-			if Lasers.networked_gradients[criminal_name].active then
-			log("NNL: Networked gradients are go")
-				Lasers:SetGradientToLaser( laser, unit, t, dt, criminal_name)
-			elseif color then 
-				--/!\ will crash! obsolete!
-				Lasers:SetColourOfLaser( laser, unit, t, dt, color )
-				
-			elseif Lasers.dev_gradient then --Laser:IsTeamGradient() then --and Lasers.networked_gradients[1].criminal_name then 
+			nnl_log("NNL: criminal_name is " .. criminal_name)				
+			if Lasers.dev_gradient then --Laser:IsTeamGradient() then --and Lasers.networked_gradients[1].criminal_name then 
 				--SetGradientToLaser( laser, unit, t, dt, criminal_name)
-				Lasers:SetColourOfLaser( laser, unit, t, dt, "gradient")
-				--if teammate has gradient laser, do that
-				return
+				if Lasers.networked_gradients[criminal_name].active then
+					log("NNL: Networked gradients are go")
+					Lasers:SetGradientToLaser( laser, unit, t, dt, criminal_name)
+					--above function directly sets laser color, bypassing the need for setcoloroflaser or return 
+					return
+				end	
+			end
+			if color then 
+				Lasers:SetColourOfLaser( laser, unit, t, dt, color )
 			elseif Lasers:IsTeamUniform() then 
 				color = Lasers:GetPeerColor(criminal_name) 
 				return
-				--this one already sets the color itself
+					--above function directly sets laser color, bypassing the need for setcoloroflaser or return 
 			elseif Lasers:IsTeamCustom() then 
 				color = Lasers:GetTeamLaserColor()
 			elseif Lasers:IsTeamDisabled() then 
@@ -389,7 +388,7 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 		return
 --		Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 	end
-	log("NNL: Doing nothing in updatelaser")
+--	log("NNL: Doing nothing in updatelaser")
 	Lasers:SetColourOfLaser( laser, unit, t, dt )
 
 end
