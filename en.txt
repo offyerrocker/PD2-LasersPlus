@@ -7,7 +7,7 @@
 	"nnl_display_team_mode_desc" : "Choose how the lasers of players without NetworkedLasers will appear to you:",
 	"team_display_mode_a" : "Custom [Set by you]",
 	"team_display_mode_b" : "Uniform [Same as their peer color, eg Green, Blue, Red, Yellow]",
-	"team_display_mode_c" : "New Gradients [Experimental feature! Do not use!]",
+	"team_display_mode_c" : "Normal [Vanilla lasers]",
 	"team_display_mode_d" : "Turned Off [ Disabled lasers ;( ]",
 	"nnl_own_r_item_title" : "Your Laser: [RED]",
 	"nnl_own_r_desc" : "Amount of Red color in your laser",	

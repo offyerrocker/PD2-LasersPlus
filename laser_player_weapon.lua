@@ -164,7 +164,7 @@ Lasers.my_gradient = Lasers.my_gradient or {
 	colors = {
 		[1] = Color(1,0,0):with_alpha(0.7),
 		[2] = Color(0,1,0):with_alpha(0.7),
-		[3] = Color(0,0,1):with_alpha(0.7),
+		[3] = Color(0,0,1):with_alpha(0.7)
 	},
 	locations = {
 		[1] = 0,
@@ -340,7 +340,7 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 		if Lasers:IsTeamDisabled() then
 			Lasers:SetColourOfLaser( laser, unit, t, dt, Color(0,0,0):with_alpha(0))
 		end
-		
+
 		if Lasers:IsTeamNetworked() then
 			--get from stored team lasers
 			
@@ -348,9 +348,12 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 			nnl_log("NNL: criminal_name is " .. criminal_name)				
 			if Lasers.dev_gradient then --Laser:IsTeamGradient() then --and Lasers.networked_gradients[1].criminal_name then 
 				--SetGradientToLaser( laser, unit, t, dt, criminal_name)
-				if Lasers.networked_gradients[criminal_name].active then
+				peer_id = CriminalsManager:character_peer_id_by_name(criminal_name)
+				log("NNL: Criminal_name, peer_id = " .. criminal_name .. ", " .. peer_id)
+				log("NNL: active = " .. Lasers.networked_gradients[peer_id].active )
+				if Lasers.networked_gradients[peer_id].active then --normally criminal_name
 					log("NNL: Networked gradients are go")
-					Lasers:SetGradientToLaser( laser, unit, t, dt, criminal_name)
+					Lasers:SetGradientToLaser( laser, unit, t, dt, peer_id)
 					--above function directly sets laser color, bypassing the need for setcoloroflaser or return 
 					return
 				end	
@@ -394,11 +397,17 @@ function Lasers:UpdateLaser( laser, unit, t, dt )
 end
 
 function SetGradientToLaser( laser, unit, t, dt, peer )
-	override_color = GradientStep( t, Lasers.networked_gradients[criminal_name], Lasers.default_gradient_speed )
+	override_color = GradientStep( t, Lasers.networked_gradients[peer], Lasers.default_gradient_speed )
 -- retrieve and send gradient information from the table, and send it to the other function
 	if not override_color then
 		override_color = Color(0.8,0.5,0.7):with_alpha(0.8)
 		nnl_log("NNL: Couldn't create gradient!")
+	end
+	Lasers.networked_gradients[peer].active = true --/!\
+	log("NNL: Set peer active to true")
+	
+	if not laser then 
+		return
 	end
 	laser:set_color( override_color )
 end
@@ -475,7 +484,11 @@ function Lasers:SetColorOfLaser( laser, unit, t, dt, override_color )
 	Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 	return
 end
+
 function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
+	if not laser then 
+		return
+	end
 	if override_color then
 		if override_color == "gradient" then
 			override_color = GradientStep( t, Lasers.my_gradient, speed)
@@ -489,7 +502,7 @@ function Lasers:SetColourOfLaser( laser, unit, t, dt, override_color )
 			return
 		else
 --			log("NNL: Using supplied override color with col ") --[" .. override_color .. "]") --LuaNetworking:ColourToString(override_color))
-			override_color = override_color or Color(0,0,0):with_alpha(1)
+			override_color = override_color or Color(1,1,1):with_alpha(1)
 			laser:set_color( override_color )
 
 			--laser:set_color( Color(0,0,0):with_alpha(1))
@@ -559,7 +572,7 @@ Hooks:Add("WeaponLaserSetOn", "WeaponLaserSetOn_", function(laser)
 end)
 
 Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, message, data)
-
+	log("NNL: sender is " .. sender )
 	if message == Lasers.LuaNetID or message == Lasers.LegacyID then
 		local criminals_manager = managers.criminals
 		if not criminals_manager then
@@ -567,10 +580,10 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 		end
 		
 		if message == Lasers.LegacyID and sender then 
-			legacy_clients[sender] = sender 
+			Lasers.legacy_clients[sender] = sender 
 			log("NNL: Sender with peerid [" .. sender .. "] is running legacy Goonmod/Networked Lasers!")
 		elseif message == Lasers.LuaNetID and sender then 
-			legacy_clients[sender] = nil
+			Lasers.legacy_clients[sender] = nil
 			log("NNL: Cleared peerid [" .. sender .. "] from legacy_clients list via Networked Lasers")
 		end
 		
@@ -585,9 +598,9 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 		end
 		
 	elseif message == Lasers.LuaNetID_gradient then
-		legacy_clients[sender] = nil
-		log("NNL: Cleared peerid [" .. sender .. "] from legacy_clients list via gradient")
-	
+		Lasers.legacy_clients[sender] = nil
+--		log("NNL: Cleared peerid [" .. sender .. "] from legacy_clients list via gradient")
+		
 		local criminals_manager = managers.criminals
 		if not criminals_manager then 
 			return
@@ -595,15 +608,17 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_", function(sender, messag
 		
 --		local char = criminals_manager:character_name_by_peer_id(sender)
 		
-		local incoming_gradient_string = message 
+		local incoming_gradient_string = data 
 		Lasers:StringToGradientTable(incoming_gradient_string,sender)
 		
 		--v unstable
 		
-		local received_gradient = data
-		if received_gradient and received_gradient ~= "none" then
-			Lasers.networked_gradients[sender] = received_gradient or nil
-		end
+--		local received_gradient = data
+--		if received_gradient and received_gradient ~= "none" then
+--			Lasers.networked_gradients[sender] = received_gradient or nil
+--		end
+
+
 			--[[
 		local col = data
 		if data ~= "none" then
