@@ -36,7 +36,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 	Lasers.lowquality_gradients = false
 	--local option, does not affect what others see. instant switch instead of slow gradients
 
-	Lasers.debugLogsEnabled = false
+	Lasers.debugLogsEnabled = true
 
 	Lasers.last_grad = Color(0,0,0):with_alpha(0)
 
@@ -395,9 +395,17 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 	end
 
 	function log_table(table_name)
+		if not table_name then 
+			log("Logged table is empty")
+			return
+		end
 		local log_str = "NNL: Logging table..." 
 		local log_k,log_v
 		for k,v in pairs(table_name) do
+			if not k or not v then
+				log("Logged table is empty")
+				return
+			end
 			log_str = (log_str .. "|" .. k .. "=" .. v .."|")			
 		end
 		log(log_str)
@@ -543,15 +551,17 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 			if Lasers.settings.networked_lasers then
 				if Lasers:IsMasterGradientEnabled() and my_gradient_string then
 					LuaNetworking:SendToPeers( Lasers.LuaNetID, my_gradient_string)-- or col_str)
-					
-					LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID, my_gradient_string )
+					--[[
+					--if legacy_clients ~= nil then 
+						LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID, my_gradient_string )
+					--end
 				else
 					LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID, col_str)
 				end
 				
 				for k,v in pairs(Lasers.legacy_clients) do
 					nnl_log("Sending legacy data to client: [" .. k .. "]")
-					LuaNetworking:SendToPeer(k,Lasers.LegacyID, col_str)
+					LuaNetworking:SendToPeer(k,Lasers.LegacyID, col_str)--]]
 				end
 			end
 		end
