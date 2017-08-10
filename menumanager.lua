@@ -6,26 +6,30 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 
 
 	Lasers.default_settings = Lasers.default_settings or {
-	
+		enabled_gradients_master = "enabled", 
 --Player/self
+		enabled_own_gradients = "enabled",		
 		own_red = 0.9,
 		own_green = 0.2,
 		own_blue = 0.15,
 		own_alpha = 0.08,
 		
 --team/other players
+		enabled_team_gradients = "enabled",
 		team_red = 0.8,
 		team_green = 0.1,
 		team_blue = 0.25,
 		team_alpha = 0.04,
 		
 --police snipers
+		enabled_snpr_gradients = "enabled",
 		snpr_red = 1,
 		snpr_green = 0.2,
 		snpr_blue = 0.2,
 		snpr_alpha = 0.5,
 				
 --world lasers/vault lasers (go bank, big bank, murky station, golden grin etc)
+		enabled_wl_gradients = "enabled",
 		wl_red = 0.8,
 		wl_green = 0.5,
 		wl_blue = 0.15,
@@ -33,6 +37,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 
 --swat turrets
 	--turret normal attack
+		enabled_turr_gradients = "enabled",
 		turr_att_red = 1,
 		turr_att_green = 0.4,
 		turr_att_blue = 0.1,
@@ -281,6 +286,42 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 		MenuCallbackHandler.callback_networked_lasers_toggle = function(self,item)
 			local value = item:value() == 'on' and true or false -- == not value --"true" and true or false --"disabled"
 			Lasers.settings.networked_lasers = value
+			Lasers:Save()
+		end
+		
+		MenuCallbackHandler.callback_master_gradients_toggle = function(self,item)
+			local value = item:value() == 'on' and true or false -- == not value --"true" and true or false --"disabled"
+			Lasers.settings.enabled_gradients_master = value
+			Lasers:Save()
+		end
+		
+		MenuCallbackHandler.callback_own_gradients_toggle = function(self,item)
+			local value = item:value() == 'on' and true or false -- == not value --"true" and true or false --"disabled"
+			Lasers.settings.enabled_own_gradients = value
+			Lasers:Save()
+		end
+		
+		MenuCallbackHandler.callback_team_gradients_toggle = function(self,item)
+			local value = item:value() == 'on' and true or false -- == not value --"true" and true or false --"disabled"
+			Lasers.settings.enabled_team_gradients = value
+			Lasers:Save()
+		end
+		
+		MenuCallbackHandler.callback_sniper_gradients_toggle = function(self,item)
+			local value = item:value() == 'on' and true or false -- == not value --"true" and true or false --"disabled"
+			Lasers.settings.enabled_snpr_gradients = value
+			Lasers:Save()
+		end
+		
+		MenuCallbackHandler.callback_world_gradients_toggle = function(self,item)
+			local value = item:value() == 'on' and true or false -- == not value --"true" and true or false --"disabled"
+			Lasers.settings.enabled_wl_gradients = value
+			Lasers:Save()
+		end
+	
+		MenuCallbackHandler.callback_turret_gradients_toggle = function(self,item)
+			local value = item:value() == 'on' and true or false -- == not value --"true" and true or false --"disabled"
+			Lasers.settings.enabled_turr_gradients = value
 			Lasers:Save()
 		end
 		

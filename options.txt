@@ -13,6 +13,14 @@
 			"value" : "networked_lasers"
 		},
 		{
+			"type" : "toggle",
+			"id" : "nnl_master_gradients_toggle",
+			"title" : "nnl_master_gradients_toggle_title",
+			"description" : "nnl_master_gradients_toggle_desc",
+			"callback" : "callback_master_gradients_toggle",
+			"value" : "enabled_gradients_master"
+		},
+		{
 			"type" : "multiple_choice",
 			"id" : "nnl_display_team_mode",
 			"title" : "nnl_display_team_mode_title",
@@ -30,6 +38,14 @@
 			"type" : "divider",
 			"size" : 24
 		},
+		{
+			"type" : "toggle",
+			"id" : "nnl_own_gradients_toggle",
+			"title" : "nnl_own_gradients_toggle_title",
+			"description" : "nnl_own_gradients_toggle_desc",
+			"callback" : "callback_own_gradients_toggle",
+			"value" : "enabled_own_gradients"
+		},		
 		{
 			"type" : "slider",
 			"id" : "nnl_own_r_menu_slider",
@@ -83,6 +99,14 @@
 			"size" : 16
 		},
 		{
+			"type" : "toggle",
+			"id" : "nnl_team_gradients_toggle",
+			"title" : "nnl_team_gradients_toggle_title",
+			"description" : "nnl_team_gradients_toggle_desc",
+			"callback" : "callback_team_gradients_toggle",
+			"value" : "enabled_team_gradients"
+		},		
+		{
 			"type" : "slider",
 			"id" : "nnl_team_r_menu_slider",
 			"title" : "nnl_team_r_item_title",
@@ -133,7 +157,15 @@
 		{
 			"type" : "divider",
 			"size" : 16
-		},		
+		},
+		{
+			"type" : "toggle",
+			"id" : "nnl_snpr_gradients_toggle",
+			"title" : "nnl_snpr_gradients_toggle_title",
+			"description" : "nnl_snpr_gradients_toggle_desc",
+			"callback" : "callback_sniper_gradients_toggle",
+			"value" : "enabled_snpr_gradients"
+		},
 		{
 			"type" : "slider",
 			"id" : "nnl_snpr_r_menu_slider",
@@ -187,6 +219,14 @@
 			"size" : 16
 		},		
 		{
+			"type" : "toggle",
+			"id" : "nnl_wl_gradients_toggle",
+			"title" : "nnl_wl_gradients_toggle_title",
+			"description" : "nnl_wl_gradients_toggle_desc",
+			"callback" : "callback_world_gradients_toggle",
+			"value" : "enabled_wl_gradients"
+		},
+		{
 			"type" : "slider",
 			"id" : "nnl_wl_r_menu_slider",
 			"title" : "nnl_wl_r_item_title",
@@ -237,7 +277,15 @@
 		{
 			"type" : "divider",
 			"size" : 16
-		},		
+		},
+		{
+			"type" : "toggle",
+			"id" : "nnl_turr_gradients_toggle",
+			"title" : "nnl_turr_gradients_toggle_title",
+			"description" : "nnl_turr_gradients_toggle_desc",
+			"callback" : "callback_turret_gradients_toggle",
+			"value" : "enabled_turr_gradients"
+		},
 		{
 			"type" : "slider",
 			"id" : "nnl_turr_att_r_menu_slider",
