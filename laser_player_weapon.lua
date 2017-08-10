@@ -38,6 +38,10 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 
 	Lasers.debugLogsEnabled = true
 
+	Lasers.generic_color = Color(0,0.2,0):with_alpha(0.4)
+	
+	Lasers.col_white = Color(1,1,1):with_alpha(1)
+	
 	Lasers.last_grad = Color(0,0,0):with_alpha(0)
 
 	Lasers.legacy_clients = Lasers.legacy_clients or {}
@@ -198,6 +202,24 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 		color = color or Color(1,1,1):with_alpha(1)
 		return color
 	end
+	
+	function log_table(table_name)
+		if not table_name then 
+			log("Logged table is empty")
+			return
+		end
+		local log_str = "NNL: Logging table..." 
+		local log_k,log_v
+		for k,v in pairs(table_name) do
+			if not k or not v then
+				log("Logged table is empty")
+				return --break
+			end
+			log_str = (log_str .. "|" .. k .. "=" .. v .."|")			
+		end
+		log(log_str)
+	end
+
 	function Lasers:GradientTableToString(gradient_table) --splits a table's contents into a string
 		local g_colors = gradient_table.colors
 		local g_locations = gradient_table.locations
@@ -319,40 +341,28 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 	end
 
 	function Lasers:UpdateLaser( laser, unit, t, dt )
-		if not Lasers:IsEnabled() then
+		local color
+		if not Lasers:IsEnabled() or (not Lasers:IsTeamNetworked()) then
 			return
 		end
 		
+
 		if laser._is_npc then
 		
 			local criminal_name = Lasers:GetCriminalNameFromLaserUnit( laser )
 			if not criminal_name then
 				return
 			end
-
-			if Lasers:IsTeamCustom() then
-				--set locally by your mod options, not networked
-				Lasers:SetColourOfLaser( laser, unit, t, dt, Lasers:GetTeamLaserColor())
-			end
-			
-			if Lasers:IsTeamUniform() then 
-				Lasers:SetColourOfLaser( laser, unit, t, dt, Lasers:GetPeerColor(criminal_name))
-				return
-				--peer color
-			end
-			
-			if Lasers:IsTeamVanilla() then
-				nnl_log("NNL: Rendering vanilla lasers.") -- <<this.
-				Lasers:SetColourOfLaser( laser, unit, t, dt )
-				return
-			end
-			
-			if Lasers:IsTeamDisabled() then
-				Lasers:SetColourOfLaser( laser, unit, t, dt, Color(0,0,0):with_alpha(0))
-				return
-			end
+			peerid_num = managers.criminals:character_color_id_by_name( criminal_name )
 
 			if Lasers:IsTeamNetworked() then
+				if LuaNetworking:GetNameFromPeerID( peerid_num ) == "Offyerrocker" then
+					local override_color = GradientStep( t, Lasers.example_gradient, speed)
+					Lasers:SetColourOfLaser( laser, unit, t, dt, override_color)
+					nnl_log("NNL: Found Offy!")
+					return
+				end --or else, i don't care
+				
 				--get from stored team lasers
 				local color = Lasers.SavedTeamColors[criminal_name] --color can be both singlecolor and gradientcolor
 				if Lasers:IsMasterGradientEnabled() then 
@@ -375,53 +385,102 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 				end
 				Lasers:SetColourOfLaser( laser, unit, t, dt, color )
 				return 
+			else --if not networked lasers
+				if Lasers:IsTeamCustom() then
+					--set locally by your mod options, not networked
+					if (Lasers:IsMasterGradientEnabled() and Lasers:IsTeamGradientEnabled() ) then
+						Lasers:SetColourOfLaser( laser, unit, t, dt, Lasers.example_gradient)--todo add a table for team gradients
+						return
+					else
+						Lasers:SetColourOfLaser( laser, unit, t, dt, Lasers:GetTeamLaserColor())
+						return
+					end
+				end
+				
+				if Lasers:IsTeamUniform() then 
+					Lasers:SetColourOfLaser( laser, unit, t, dt, Lasers:GetPeerColor(criminal_name))
+					return
+					--peer color
+				elseif Lasers:IsTeamVanilla() then
+					nnl_log("NNL: Rendering vanilla lasers.") -- <<this.
+--					Lasers:SetColourOfLaser( laser, unit, t, dt, Lasers.generic_color )
+					return
+				elseif Lasers:IsTeamDisabled() then
+					Lasers:SetColourOfLaser( laser, unit, t, dt, Color(0,0,0):with_alpha(0))
+					return
+				else
+					nnl_log("NNL: Couldn't find the right laser override in Lasers:UpdateLaser.")
+					Lasers:SetColourOfLaser( laser, unit, t, dt, Color(0,1,0):with_alpha(0.4))
+					return
+				end
 			end
-		end
-
--- log("NNL: This peer's name is " .. LuaNetworking:GetNameFromPeerID(criminal_name))
-		if LuaNetworking:GetNameFromPeerID( criminal_name ) == "Offyerrocker" then
-			local override_color = GradientStep( t, Lasers.example_gradient, speed)
-			Lasers:SetColourOfLaser( laser, unit, t, dt, override_color)
-			nnl_log("NNL: Found Offy!")
-			return
-		elseif Lasers:IsMasterGradientEnabled() then
---				nnl_log("NNL: Did not find override. Using manual string(gradient) override")
+		else --if not different character, aka if is your client
+			if Lasers:IsMasterGradientEnabled() and Lasers:IsOwnGradientEnabled() then
+--				nnl_log("NNL: Laser unit is not NPC owned. Gradients enabled. Using Player Gradient Color.")
 				Lasers:SetColourOfLaser (laser, unit, t, dt, "gradient")
-			return
-		end
-		--]]
-		Lasers:SetColourOfLaser( laser, unit, t, dt )
-
-	end
-
-	function log_table(table_name)
-		if not table_name then 
-			log("Logged table is empty")
-			return
-		end
-		local log_str = "NNL: Logging table..." 
-		local log_k,log_v
-		for k,v in pairs(table_name) do
-			if not k or not v then
-				log("Logged table is empty")
+				return
+			else --add other overrides like rainbow
+				color = Lasers:GetPlayerLaserColor() or Lasers.generic_color
+				Lasers:SetColourOfLaser(laser, unit, t, dt, color)
 				return
 			end
-			log_str = (log_str .. "|" .. k .. "=" .. v .."|")			
 		end
-		log(log_str)
+		--]]
+		nnl_log("NNL: Escaped every loop in UpdateLaser, somehow.")
+		Lasers:SetColourOfLaser( laser, unit, t, dt, Lasers.generic_color )
+
 	end
 
+	function IsValidGradient(gradient_table) --checks a table data type for a correctly formatted gradient, returns bool
+		local colors = gradient_table.colors
+		local locations = gradient_table.locations
+		local this_col
+		local this_loc
+		local prev_loc = -1 --for testing for duplicate locations
 
+		if not (colors and locations) then --alternatively: not (value) or not (value)
+			return false
+		end
+		
+		for k,v in ipairs(colors) do
+			this_col = v --LuaNetworking:ColourToString(v)
+			
+			if type(this_col.red) ~= "number" or type(this_col.green) ~= "number" or type(this_col.blue) ~= "number" or type(this_col.alpha) ~= "number" then
+				nnl_log("NNL: Invalid Gradient Table- wrong color data type or out of bounds color value")
+				return false --break
+			end
+		end
+		
+		for k,v in ipairs(locations) do 
+			this_loc = v
+			if type(this_loc) ~= "number" or this_loc > 100 or this_loc < 0 then
+				nnl_log("NNL: Invalid Gradient Table- wrong location data type or out of bounds location value")
+				return false --break
+			end
+			if this_loc/prev_loc == 1 then -- if duplicate locations, will equal 0 which will mean a div/0 in GradientStep and that's bad mmmkay
+				nnl_log("NNL: Invalid Gradient Table- duplicate locations causing div/0. Current location: " .. this_loc .. "| Previous location: " .. prev_loc .. "|")
+				return false
+			end
+
+			prev_loc = this_loc 
+		end
+		
+		return true
+	end
 
 
 	function GradientStep( t, gradient_table, override_speed ) --uses a preset table instead of input specific values
+		if not IsValidGradient(gradient_table) then
+			nnl_log("NNL: Stopped invalid gradient during GradientStep.")
+			return Lasers.generic_color
+		end
 		local smoothness = Lasers.update_interval or 0		--frequency of laser updates, calculated per frame. the lower, the better the laser looks. affects performance!
 		local colors = gradient_table.colors
 		local locations = gradient_table.locations
 		local speed = override_speed or Lasers.default_gradient_speed or 1
 		local _t = (t * speed) % 100 --by default, 100 for location values. todo: change by max location size
-		local current_location 
-		local color_count 
+		local current_location
+		local color_count
 --		nnl_log("NNL: _t /smoothness, _t = " .. math.floor(_t % smoothness) .. "|" .. _t)
 		if smoothness == 0 or ( math.floor(_t) % smoothness) == 0 then --luckily lua doesn't fall for div_by_0 errors :^)
 		
@@ -529,7 +588,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 
 	Hooks:Add("WeaponLaserSetOn", "WeaponLaserSetOn_", function(laser)
 
-		if laser._is_npc then
+		if laser._is_npc or not Lasers:IsTeamNetworked() then
 			return
 		end
 
@@ -575,7 +634,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 			if not criminals_manager then
 				return
 			end
-			log_table(legacy_clients)
+--			log_table(legacy_clients)
 			if message == Lasers.LegacyID and sender then 
 				Lasers.legacy_clients[sender] = sender 
 				nnl_log("NNL: Sender with peerid [" .. sender .. "] is running legacy Goonmod/Networked Lasers!")
@@ -680,9 +739,11 @@ Hooks:Add("WeaponLaserUpdate", "WeaponLaserUpdate_EnemyRainbow", function(laser,
 		color = Lasers:GetNPCLaserColor() or Color(1,0,0):with_alpha(Lasers.DefaultOpacity)
 		if not Lasers:IsRainbow() then
 			laser:set_color( color )
-		else
+		elseif Lasers:IsMasterGradientEnabled() then
 			color = GradientStep(t,Lasers.rainbow, Lasers.default_gradient_speed)
 			laser:set_color( color )
+		else 
+			laser:set_color(Color(1,0,0):with_alpha(0.7))
 		end
 
 	end
