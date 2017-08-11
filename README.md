@@ -62,7 +62,9 @@ Make a color at http://colorpicker.com or just wing it and learn as you go.
 Laser Color Gradients: ADVANCED OR INTREPID USERS ONLY!
 Laser Color Gradients, or laser color patterns, are a feature new and exclusive (so far) to this mod. Using them, you can make your lasers shift through the colors of your choosing, at intervals of your choosing, as you would with any moderately fancy customizable LED RGB keyboard or mouse. 
 
-Currently, I'm unable to find a good way to add gradients to the in-game menu, and I'll explain why.
+Currently, I'm unable to find a good way to add gradients to the in-game menu. Since there's no defined limit to how many colors you can choose to use, except practical memory limits, I only have an idea about how to make a static menu reflect a variable amount of menu options. Don't worry, though, I expect I'll make a menu option for that later on.
+
+[NNL's gradient system]
 NNL uses a system known as "color locations," involving two different kinds of data: Colors and locations. (The name makes it easy to remember.) If you've made a gradient in CSS, or if you've made a custom gradient setting in photomanipulation/drawing software like Adobe Photoshop, or if you've customized an LED gaming keyboard or mouse with flashy lights, you may have used this system before.
 
 [Here's the rundown on the color location system:]
@@ -145,8 +147,13 @@ More coming soon.
 
 
 [That's all for now. Ask me if you have questions!]
+
 Contact me:
+
 GitHub: offyerrocker
+
 Reddit: /u/offyerrocker
+
 Steam: /id/offyerrocker
+
 MySpace: I don't have myspace but if I did you can bet your badonkadonks it'd be "offyerrocker"
