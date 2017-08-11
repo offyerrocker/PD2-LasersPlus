@@ -365,11 +365,9 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 				
 				--get from stored team lasers
 				local color = Lasers.SavedTeamColors[criminal_name] --color can be both singlecolor and gradientcolor
-				if Lasers:IsMasterGradientEnabled() then 
-					if color then
-						Lasers:SetColourOfLaser( laser, unit, t, dt, color )
-						return
-					end
+				if color then
+					Lasers:SetColourOfLaser( laser, unit, t, dt, color )
+					return
 				end
 				--secondary display: if NetworkedLasers is enabled but networked color/tables are not found
 				--SetColourOfLaser is called at the end of this "if-checklist"
