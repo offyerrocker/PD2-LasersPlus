@@ -99,9 +99,9 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 	--]]
 	Lasers.my_gradient = Lasers.my_gradient or {
 		colors = {
-			[1] = Color(0.5,0,0):with_alpha(0.5),
-			[2] = Color(0,0.2,0.7):with_alpha(0.7),
-			[3] = Color(1,0.3,0):with_alpha(0.3)
+			[1] = Color(1,0,0.1):with_alpha(0.5),
+			[2] = Color(1,1,0.1):with_alpha(0.7),
+			[3] = Color(0.1,0.1,1):with_alpha(0.3)
 		},
 		locations = {
 			[1] = 0,
@@ -557,9 +557,10 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 				laser:set_color( override_color )
 				return
 			elseif type(override_color) == "table" then
-				nnl_log("NNL: Writing color from table via GradientStep(...)")
+--				nnl_log("NNL: Writing color from table via GradientStep(...)")
 				new_color = GradientStep(t, override_color, 20)
 				laser:set_color( new_color )
+				return
 			else
 				override_color = override_color or Color(1,1,1):with_alpha(1)
 				laser:set_color( override_color )
@@ -571,7 +572,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 			return
 		else
 			laser:set_color( override_color)
-			nnl_log("nnl: /!\ Failed to find override gradient to apply. /!\ ")
+			nnl_log("nnl: /!%\ Failed to find override gradient to apply. /!%\ ")
 			return
 		end
 
