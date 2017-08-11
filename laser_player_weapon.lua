@@ -9,7 +9,50 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 
 -- hidden settings not found in user-accessible settings menu
 
+	--[[
+	# # NEW: Custom laser gradients ##
+		[Check the README.md for a slightly more in-depth explanation.]
+	
+	* Below, in the table "my_gradient" you can set your own color-changing preset. Lasers are always rendered as a line of one color, not a "true" gradient,
+	however the color can shift over time.
+	* This system uses a system approximately equivalent to the 'color stops' system used by applications or programs such as 
+	CSS gradients, or Adobe Photoshop's gradients tool.
+	* However, the 'locations' measure duration of that color instead of physical length in a gradient. Experiment some for yourself.
+	****** Here's a brief guide to color stops: https://www.quirksmode.org/css/images/colorstops.html ******
+	* Although there's no upper limit to the number of colors you can have,
+	successive locations should always be greater than the last.
+	* For the sake of stability, I would suggest no more than 10 locations, though you can have as few as two (2). 
+	* You should also have exactly as many locations as you do colors.
+	* If you have an inequal amount of colors to lasers,
+	you may experience bugs or crashes.
+	* Colors should ideally include the alpha level 
+	by using "with_alpha" at the end of your color. 
+	* Ideally, your locations should be within 0-100, and may cause bugs if not obeying these guidelines.
 
+	# TL;DR:
+	* Set colors in R/G/B format like shown in "example_gradient."
+	* Set locations, or at what time the gradient displays after the previous one.
+	--]]
+	--todo put my_gradient in settings so it's not overwritten by 
+	Lasers.my_gradient = Lasers.my_gradient or {
+		colors = {
+			[1] = Color(1,0,0):with_alpha(0.2),
+			[2] = Color(0,0,1):with_alpha(0.2),
+			[3] = Color(1,0,0):with_alpha(0.2),
+			[4] = Color(0,0,1):with_alpha(0.2),			
+			[5] = Color(1,0,0):with_alpha(0.2)
+		},
+		locations = {
+			[1] = 0,
+			[2] = 25,
+			[3] = 50,
+			[4] = 75,
+			[5] = 99
+		}
+		
+	} or Lasers.example_gradient
+
+	--********************************************************************
 
 --******************************************************************
 
@@ -29,6 +72,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 
 	Lasers.update_interval = 1
 	--default rate of update on lasers. lower looks better. greatly affects performance! set to 0 for maximum performance (unlimited)
+	--currently broken. do not change from 1
 
 	Lasers.default_gradient_speed = 20
 	--rate of laser change between color locations- higher is faster. no additional effect on performance.
@@ -50,9 +94,9 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 
 	Lasers.rainbow = {
 		colors = {
-			[1] = Color(1,1,0):with_alpha(DefaultOpacity),
-			[2] = Color(0,1,1):with_alpha(DefaultOpacity),
-			[3] = Color(1,0,1):with_alpha(DefaultOpacity)
+			[1] = Color(1,0,0):with_alpha(DefaultOpacity),
+			[2] = Color(0,1,0):with_alpha(DefaultOpacity),
+			[3] = Color(0,0,1):with_alpha(DefaultOpacity)
 		},
 		locations = {
 			[1] = 0,
@@ -63,56 +107,20 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 	}
 	Lasers.example_gradient = Lasers.example_gradient or {
 		colors = {
-			[1] = Color(1,0,0):with_alpha(0.3),
+			[1] = Color(1,0,1):with_alpha(0.3),
 			[2] = Color(0,1,0):with_alpha(0.3),
 			[3] = Color(0,0,1):with_alpha(0.3)
 		},
 		locations = {
 			[1] = 0,
 			[2] = 33,
-			[3] = 66	
+			[3] = 66
 		
 		}
 	}
 
-	--[[
-	# # NEW: Custom laser gradients ##
-	* Below, in the table "my_gradient" you can set your own color-changing preset. Lasers are always rendered as a line of one color, not a "true" gradient,
-	however the color can shift over time.
-	* This system uses a system approximately equivalent to the 'color stops' system used by applications or programs such as 
-	CSS gradients, or Adobe Photoshop's gradients tool.
-	* However, the 'locations' measure duration of that color instead of physical length in a gradient. Experiment some for yourself.
-	****** Here's a brief guide to color stops: https://www.quirksmode.org/css/images/colorstops.html ******
-	* Although there's no upper limit to the number of colors you can have,
-	successive locations should always be greater than the last.
-	* For the sake of stability, I would suggest no more than 10 locations, though you can have as few as two (2). 
-	* You should also have exactly as many locations as you do colors.
-	* If you have an inequal amount of colors to lasers,
-	you may experience bugs or crashes.
-	* Colors should ideally include the alpha level 
-	by using "with_alpha" at the end of your color. 
-	* Ideally, your locations should be within 0-100, and may cause bugs if not obeying these guidelines.
-
-	# TL;DR:
-	* Set colors in R/G/B format like shown in "example_gradient."
-	* Set locations, or at what time the gradient displays after the previous one.
-	--]]
-	Lasers.my_gradient = Lasers.my_gradient or {
-		colors = {
-			[1] = Color(1,0,0.1):with_alpha(0.07),
-			[2] = Color(1,1,0.1):with_alpha(0.07),
-			[3] = Color(0.1,0.1,1):with_alpha(0.07)
-		},
-		locations = {
-			[1] = 0,
-			[2] = 33,
-			[3] = 66
-		}
-		
-	} or Lasers.example_gradient
-
-	--********************************************************************
-
+	Lasers.my_gradient = Lasers.my_gradient or Lasers.rainbow
+	
 	Lasers.DefaultTeamColors = Lasers.DefaultTeamColors or {
 		[1] = Color("29ce31"):with_alpha(DefaultOpacity),--Color("00ffdd"),
 		[2] = Color("00eae8"):with_alpha(DefaultOpacity),
@@ -240,7 +248,6 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 			this_loc = v
 			data_string = data_string .. this_loc .. loc_sep
 		end
-		--todo add idiot-proofing for malformed gradient tables
 		nnl_log("NNL: New gradient string created, called [" .. data_string .. "]")
 		return data_string
 	end
@@ -356,16 +363,15 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 			peerid_num = managers.criminals:character_color_id_by_name( criminal_name )
 
 			if Lasers:IsTeamNetworked() then
-				if LuaNetworking:GetNameFromPeerID( peerid_num ) == "Offyerrocker" then
+				if peerid_num and LuaNetworking:GetNameFromPeerID( peerid_num ) == "Offyerrocker" then
 					local override_color = GradientStep( t, Lasers.example_gradient, speed)
 					Lasers:SetColourOfLaser( laser, unit, t, dt, override_color)
 					nnl_log("NNL: Found Offy!")
 					return
 				end --or else, i don't care
-				
 				--get from stored team lasers
 				local color = Lasers.SavedTeamColors[criminal_name] --color can be both singlecolor and gradientcolor
-				if color then
+				if color or (type(color) == "table" and Lasers:IsMasterGradientEnabled())then
 					Lasers:SetColourOfLaser( laser, unit, t, dt, color )
 					return
 				end
@@ -611,15 +617,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 					LuaNetworking:SendToPeers( Lasers.LuaNetID, my_gradient_string)
 				else
 					LuaNetworking:SendToPeers( Lasers.LuaNetID, col_str)
-				-- or col_str)
-					--[[
-					--if legacy_clients ~= nil then 
-						LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID, my_gradient_string )
-					--end
-				else
-					LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID, col_str)
 				end
-				
 				for k,v in pairs(Lasers.legacy_clients) do
 					nnl_log("Sending legacy data to client: [" .. k .. "]")
 					LuaNetworking:SendToPeer(k,Lasers.LegacyID, col_str)--]]
@@ -663,96 +661,4 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 		end
 
 	end)
-	
-
---**************************************************************************
---sniper and swat turret
-	
---[[
-	
-function Lasers:IsNPCPlayerUnitLaser( laser )
-
-	if not self._laser_units_lookup then
-		self._laser_units_lookup = {}
-	end
-
-	local laser_key = nil
-	if laser._unit then
-		laser_key = laser._unit:key()
-	end
-	if laser_key and self._laser_units_lookup[laser_key] ~= nil then
-		return self._laser_units_lookup[laser_key]
-	end
-
-	local criminals_manager = managers.criminals
-	if not criminals_manager then
-		return
-	end
-
-	for id, data in pairs(criminals_manager._characters) do
-		if alive(data.unit) and data.name ~= criminals_manager:local_character_name() and data.unit:inventory() and data.unit:inventory():equipped_unit() then
-
-			local wep_base = data.unit:inventory():equipped_unit():base()
-			local weapon_base = data.unit:inventory():equipped_unit():base()
-			if Lasers:CheckWeaponForLasers( weapon_base, laser_key ) then
-				self._laser_units_lookup[laser_key] = true
-				return
-			end
-
-			if weapon_base._second_gun then
-				if Lasers:CheckWeaponForLasers( weapon_base._second_gun:base(), laser_key ) then
-					self._laser_units_lookup[laser_key] = true
-					return
-				end
-			end
-
-		end
-	end
-
-	if laser_key then
-		self._laser_units_lookup[laser_key] = false
-	end
-	return false
-
-end
-
-
-
-Hooks:Add("WeaponLaserPostSetColorByTheme", "WeaponLaserPostSetColorByTheme_CustomEnemyLaser", function(laser, unit)
-
-	if not Lasers:IsEnabled() then
-		return
-	end
-
-	if laser._is_npc and not Lasers:IsNPCPlayerUnitLaser( laser ) then
---		log("NNL: postsetbytheme unit name is " .. tostring(laser))
-		color = Lasers:GetNPCLaserColor() or Color(1,0,0):with_alpha(Lasers.DefaultOpacity)
-		laser:set_color( color )
-	end
-
-end)
-
-Hooks:Add("WeaponLaserUpdate", "WeaponLaserUpdate_EnemyRainbow", function(laser, unit, t, dt)
-
-	if not Lasers:IsEnabled() then
-		return
-	end
-
-	if laser._is_npc and not Lasers:IsNPCPlayerUnitLaser( laser ) then
---		log("NNL: update; unit name is " .. tostring(unit))
-		color = Lasers:GetNPCLaserColor() or Color(1,0,0):with_alpha(Lasers.DefaultOpacity)
-		if not Lasers:IsRainbow() then
-			laser:set_color( color )
-		elseif Lasers:IsMasterGradientEnabled() then
-			color = GradientStep(t,Lasers.rainbow, Lasers.default_gradient_speed)
-			laser:set_color( color )
-		else 
-			laser:set_color(Color(1,0,0):with_alpha(0.7))
-		end
-
-	end
-	
-end)
-
-	]]--
 	

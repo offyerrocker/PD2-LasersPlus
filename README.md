@@ -126,7 +126,7 @@ where xxxxxx is a hexadecimal code (base16 number system) with characters 0-f. T
 ------
 
 **IMPORTANT!**
-Your own gradient setting is stored in laser_player_weapon.lua:100 (at the moment.) You must change the values in this one if it's the gradient you want your laser to display to yourself and others!
+Your own gradient setting is stored in laser_player_weapon:37 (at the moment.) You must change the values in this one if it's the gradient you want your laser to display to yourself and others!
 
 **More advanced settings:**
 *These settings can be found in laser_player_weapon.lua. You can change them by manually setting their values to "true" or "false."* 
