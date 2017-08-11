@@ -56,18 +56,19 @@ Locations are the "markers" (tag markers, not art markers) representing the time
 
 For example, take the following NNL-formatted gradient, written as a table data structure in Lua:
 
-Lasers.my_gradient = {
-  colors = {
-    \[1] = Color(1,0,0):with_alpha(0.07),
-    \[2] = Color(0,1,0):with_alpha(0.07),
-    \[3] = Color(0,0,1):with_alpha(0.07)
-  },
-  locations = {
-    \[1] = 0,
-    \[2] = 33,
-    \[3] = 66
-  }
-}
+	Lasers.my_gradient = Lasers.my_gradient or {
+		colors = {
+			[1] = Color(1,0,0.1):with_alpha(0.5),
+			[2] = Color(1,1,0.1):with_alpha(0.7),
+			[3] = Color(0.1,0.1,1):with_alpha(0.3)
+		},
+		locations = {
+			[1] = 0,
+			[2] = 33,
+			[3] = 66
+		}
+		
+	}
 
 If you don't know Lua, don't worry.
 The first color will start out as
