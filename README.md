@@ -13,30 +13,45 @@ Also unlike other mods on the market, the mod lets you create your own flashing 
 The in-game mod options will control most of your settings, and are largely self-explanatory, but if you're reading this they're obviously not self-explanatory enough.
 OH, LET'S BREAK IT DOWN!
 
+
 [Master Enable Gradients:] (Checkbox)
+
 This option is a master control that enables gradients for the entire mod. Disabling this will stop any gradiented lasers from being rendered, and instead will only use solid single colors, regardless of other "Enable [x] Gradient Lasers" checkboxes.
 
+
 [Enable My Gradient Lasers:] (Checkbox)
+
 This option enables gradients for your weapons. Disabling this will only prevent your weapons from using gradient lasers, and will instead only use solid single colors. As long as you have Master Enable Gradients enabled, other entities' laser colors will not be affected by this option.
 
+
 [Enable Team Gradient Lasers:] (Checkbox)
+
 This option enables gradients for your heister teammates' weapons. Disabling this will only prevent their weapons from using gradient lasers, and will instead only use solid single colors. As long as you have Master Enable Gradients enabled, other, non-teammate entities' laser colors, including but not limited to your own and snipers' lasers, will not be affected by this option.
 
+
 [Enable Sniper Gradient Lasers:] (Checkbox)
+
 You should know the drill by now.
 Snipers are the enemies with sniper rifles and lasers like yours, and they're kind of jerks. ZEAL snipers from the Crime Spree game mode do not have lasers.
 
+
 [Enable World Gradient Lasers:] (Checkbox)
+
 Seriously. It's pretty obvious. 
 World Lasers are lasers emitted from non-weapons, mostly vault lasers, such as the ones in the heists GO Bank, The Diamond, Murky Station, Big Bank, and Golden Grin Casino.
 
+
 [Enable Turret Gradient Lasers:] (Checkbox)
+
 I'm not sure what else to say.
 Here, "Turrets" refers to the [enemy SWAT Van Turrets only,] *not* to either the Sentry Gun, nor the Suppressed Sentry Gun Deployables.
 I avoided changing turret lasers because the "Sentry Gun Contours" mod already changes these, and also because I'm lazy.
 
+
 [Laser Color Sliders:]
+
 The basics:
+
 This mod, as well as the base game, uses RGB/a values to determine the color of your laser.
 RGB/a stands for Red, Green, Blue, alpha. Red, Green and Blue are the base colors of light; assembling them in different amounts can give you any color visible to the human eye. Alpha is the opacity of your laser/color- the higher, the more easily visible. Alpha is independent of RGB.
 Make a color at http://colorpicker.com or just wing it and learn as you go.
@@ -73,19 +88,19 @@ For example, take the following NNL-formatted gradient, written as a table data 
 If you don't know Lua, don't worry.
 The first color will start out as
 
-  \[1] = Color(1,0,0):with_alpha(0.07)
+	[1] = Color(1,0,0):with_alpha(0.07)
   
 which is pure red. It starts at 0 seconds, because its corresponding "locations" value,
 
-  \[1] = 0
+	[1] = 0
 
 is zero seconds. The next value in "locations" is
 
-  \[2] = 33
+	[2] = 33
 
 so the gradient will shift color slowly over the next 33 seconds to the next color
 
-  \[2] = Color(0,1,0):with_alpha(0.07)
+	[2] = Color(0,1,0):with_alpha(0.07)
 
 which is green, until after exactly 33 seconds, whereupon it will be pure green, and begin to switch to the last color.
 
@@ -98,11 +113,15 @@ You can *technically* have as many locations as you want, but I'd recommend usin
 Anything else will throw an error, or if you're lucky, be caught by my failsafe and only display a boring green laser.
 
 [Colors must follow these requirements:]
-* Formatting for colors must be one of the following two methods:
-Color(REDVALUE,GREENVALUE,BLUEVALUE):with_alpha(ALPHA)
+Formatting for colors must be one of the following two methods:
+
+* Color(REDVALUE,GREENVALUE,BLUEVALUE):with_alpha(ALPHA)
 where REDVALUE, GREENVALUE, BLUEVALUE and ALPHA are number values from 0 to 1; or else the Color can be formatted as a hex code, as such:
-Color("xxxxxx"):with_alpha(ALPHA)
+
+* Color("xxxxxx"):with_alpha(ALPHA)
 where xxxxxx is a hexadecimal code (base16 number system) with characters 0-f. The quotation marks are mandatory. (Yes, it's a string.)
+
+------
 
 **IMPORTANT!**
 Your own gradient setting is stored in laser_player_weapon.lua:100 (at the moment.) You must change the values in this one if it's the gradient you want your laser to display to yourself and others!
