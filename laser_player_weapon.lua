@@ -24,10 +24,10 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 	--"new networked custom player lasers- gradient - version one"
 	--for advanced users- creates a gradient between two or more colors. 
 
-	Lasers.DefaultOpacity = 0.5
+	Lasers.DefaultOpacity = 0.2
 	--default opacity for lasers
 
-	Lasers.update_interval = 2
+	Lasers.update_interval = 1
 	--default rate of update on lasers. lower looks better. greatly affects performance! set to 0 for maximum performance (unlimited)
 
 	Lasers.default_gradient_speed = 20
@@ -36,7 +36,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 	Lasers.lowquality_gradients = false
 	--local option, does not affect what others see. instant switch instead of slow gradients
 
-	Lasers.debugLogsEnabled = true
+	Lasers.debugLogsEnabled = false
 
 	Lasers.generic_color = Color(0,0.2,0):with_alpha(0.4)
 	
@@ -99,9 +99,9 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 	--]]
 	Lasers.my_gradient = Lasers.my_gradient or {
 		colors = {
-			[1] = Color(1,0,0.1):with_alpha(0.5),
-			[2] = Color(1,1,0.1):with_alpha(0.7),
-			[3] = Color(0.1,0.1,1):with_alpha(0.3)
+			[1] = Color(1,0,0.1):with_alpha(0.07),
+			[2] = Color(1,1,0.1):with_alpha(0.07),
+			[3] = Color(0.1,0.1,1):with_alpha(0.07)
 		},
 		locations = {
 			[1] = 0,
@@ -610,7 +610,10 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 			nnl_log("NNL: Completed table to string conversion. Result: " .. my_gradient_string )
 			if Lasers.settings.networked_lasers then
 				if Lasers:IsMasterGradientEnabled() and my_gradient_string then
-					LuaNetworking:SendToPeers( Lasers.LuaNetID, my_gradient_string)-- or col_str)
+					LuaNetworking:SendToPeers( Lasers.LuaNetID, my_gradient_string)
+				else
+					LuaNetworking:SendToPeers( Lasers.LuaNetID, col_str)
+				-- or col_str)
 					--[[
 					--if legacy_clients ~= nil then 
 						LuaNetworking:SendToPeersExcept( Lasers.legacy_clients, Lasers.LuaNetID, my_gradient_string )
@@ -666,6 +669,8 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 
 --**************************************************************************
 --sniper and swat turret
+	
+--[[
 	
 function Lasers:IsNPCPlayerUnitLaser( laser )
 
@@ -751,5 +756,5 @@ Hooks:Add("WeaponLaserUpdate", "WeaponLaserUpdate_EnemyRainbow", function(laser,
 	
 end)
 
-	
+	]]--
 	
