@@ -1,9 +1,9 @@
 {
 	"name" : "New Networked Lasers",
-	"description" : "Share your lasers with the world!",
-	"author" : "Offy and the Scooby-Doo Gang",
+	"description" : "Custom laser colors, synced with other modded players",
+	"author" : "Offyerrocker",
 	"contact" : "offyerrocker",
-	"version" : "0.7",
+	"version" : "public 0.37",
 	"hooks" : [
 		{
 			"hook_id" : "lib/managers/menumanager",
@@ -24,7 +24,7 @@
 	],
 	"updates" : [
 		{
-			"revision" : 1,
+			"revision" : 2,
 			"identifier" : "NNL"
 		}
 	]
