@@ -349,13 +349,13 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 
 	function Lasers:UpdateLaser( laser, unit, t, dt )
 		local color
-		if not Lasers:IsEnabled() or (not Lasers:IsTeamNetworked()) then
+		if not Lasers:IsEnabled() then
 			return
 		end
 		
 
 		if laser._is_npc then
-		
+			
 			local criminal_name = Lasers:GetCriminalNameFromLaserUnit( laser )
 			if not criminal_name then
 				return
