@@ -52,7 +52,7 @@
 	"nnl_wl_b_item_title" : "World Lasers: [BLUE]",
 	"nnl_wl_b_desc" : "Amount of Blue color in world lasers",
 	"nnl_wl_a_item_title" : "World Lasers: [ALPHA]",
-	"nnl_wl_a_desc" : "Amount of opacity in world lasers",	
+	"nnl_wl_a_desc" : "Amount of opacity in world lasers",
 	"nnl_turr_att_r_item_title" : "Turret Laser (Attacking: [RED]",
 	"nnl_turr_att_r_desc" : "Amount of Red color in attacking turrets' lasers",	
 	"nnl_turr_att_g_item_title" : "Turret Laser (Attacking: [GREEN]",
