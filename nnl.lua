@@ -939,7 +939,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 			return
 		else
 			laser:set_color( Lasers.generic_color )
-			nnl_log("/!%\ Failed to find override gradient to apply. /!%\ ")
+			nnl_log("!! Failed to find override gradient to apply. !!")
 			return
 		end
 
@@ -972,7 +972,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 			if Lasers:IsRainbow() then
 				col_str = "rainbow"
 			end
-			if Lasers:IsOwnGradientEnabled() then --don't calculate unless you have gradients enabled, duh
+			if Lasers:IsMasterGradientEnabled() and Lasers:IsOwnGradientEnabled() then --don't calculate unless you have gradients enabled, duh
 				local my_gradient_string = Lasers:GradientTableToString(Lasers.my_gradient) or false
 				nnl_log("Completed table to string conversion. Result: " .. my_gradient_string )
 			end
@@ -1076,7 +1076,12 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 					select_gradient = Lasers.mode_list[Lasers:GetWorldGradientMode()]
 				end
 					color = GradientStep(t,Lasers.select_gradient, Lasers.default_gradient_speed)
-					laser:set_color( color )
+					if color then 
+						laser:set_color( color )
+						return
+					end
+					nnl_log ("Failed to create color.")
+					return
 			else
 				laser._brush:set_color(GradientStep(t, Lasers.rainbow, Lasers.default_gradient_speed) )
 			end
