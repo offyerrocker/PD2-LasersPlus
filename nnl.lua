@@ -1077,7 +1077,7 @@ Lasers._data = Lasers._data or Lasers.settings or {}
 				end
 					color = GradientStep(t,Lasers.select_gradient, Lasers.default_gradient_speed)
 					if color then 
-						laser:set_color( color )
+						laser._brush:set_color( color )
 						return
 					end
 					nnl_log ("Failed to create color.")
