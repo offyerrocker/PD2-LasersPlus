@@ -27,7 +27,6 @@ function BlackMarketGui:_buy_mod_callback(data)
 	self:reload()
 end
 
---I LIED, I PREHOOKED IT INSTEAD MUAHAHAHA
 Hooks:PreHook(BlackMarketGui, "populate_mods", "populate_mods_lasersplus", function(self,data)
 	local crafted = managers.blackmarket:get_crafted_category(data.prev_node_data.category)[data.prev_node_data.slot]
 	local cosmetics_blueprint = crafted.cosmetics and crafted.cosmetics.id and tweak_data.blackmarket.weapon_skins[crafted.cosmetics.id] and tweak_data.blackmarket.weapon_skins[crafted.cosmetics.id].default_blueprint or {}
@@ -36,7 +35,6 @@ Hooks:PreHook(BlackMarketGui, "populate_mods", "populate_mods_lasersplus", funct
 	for i, c_mod in ipairs(cosmetics_blueprint) do
 		if Lasers:IsQOLEnabled() then
 		--this block is executed on loading weapon skins that come with free weapon attachments
-		--
 			local mod_td = tweak_data.weapon.factory.parts[c_mod]
 			local mod_type = mod_td.type
 			local sub_type = mod_td.sub_type

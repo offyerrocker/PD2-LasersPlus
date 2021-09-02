@@ -1,0 +1,6 @@
+<mod name="Lasers+" author="Offyerrocker" color="Color(1,0.5,0)" core_class="lasersplus_core.lua">
+	<AssetUpdates id="20577" version="3" provider="modworkshop" install_directory = "mods/" version_is_number="false"/>
+	<Localization directory="localization" default="english.json">
+		<loc file="english.json" language="english" />
+	</Localization>
+</mod>

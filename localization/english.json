@@ -1,0 +1,4 @@
+{
+	"menu_lasersplus_prompt_missing_colorpicker_title" : "Color Picker mod installation required",
+	"menu_lasersplus_prompt_missing_colorpicker_desc" : "You must install \"Color Picker\" in order to use the Set Color feature!\n\nYou can install it from here: $URL"
+}
