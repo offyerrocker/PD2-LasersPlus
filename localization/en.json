@@ -1,5 +1,17 @@
 {
-	"lasersplus_title" : "Lasers+ Settings",
+	"lasersplus_title" : "LasersPlus Settings",
+	
+	"menu_lasersplus_legacysave_title" : "Import legacy LasersPlus Save File?",
+	"menu_lasersplus_legacysave_desc" : "Saves from an incompatible version of LasersPlus (v2.86 or earlier) were detected!\nWould you like to import your LasersPlus settings?",
+	"menu_lasersplus_legacysave_import_and_delete" : "Import and delete old settings file",
+	"menu_lasersplus_legacysave_import_and_archive" : "Import and keep old settings file",
+	"menu_lasersplus_legacysave_archive" : "Keep old settings file without importing",
+	"menu_lasersplus_legacysave_not_now" : "Do nothing for now",
+	"menu_lasersplus_missing_colorpicker_title" : "Missing Dependency",
+	"menu_lasersplus_missing_colorpicker_desc" : "You need \"ColorPicker\" installed in order to use the ColorPicker editor!\nYou can find it here:\n$URL",
+	"menu_lasersplus_ok" : "OK",
+	
+	
 	"lp_master_toggle_title" : "Enable the Lasers+ mod",
 	"lp_master_toggle_desc" : "Lets this mod change custom lasers' and flashlights' colors."
 	"lp_laser_strobes_toggle_title" : "Enable Gadget Strobes",
