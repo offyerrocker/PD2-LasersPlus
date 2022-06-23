@@ -1,17 +1,4 @@
---[[
-todo:
-ProcessStrobe()
-legacy settings import
-	- color from rgb to hex
-	- blackmarket qol split into separate settings
-	- strobe enabled changed to use default strobe types
-	- strobe/quality/override speed?
-	- additional strobe addons in saves
-strobes library/navigation?
-
-on player connect, send/save laser info
-
---]]
+--unused
 
 LasersPlus = {}
 LasersPlus._mod_path = LasersPlus.GetPath and LasersPlus:GetPath() or ModPath
@@ -850,3 +837,18 @@ if SystemFS:exists( Application:nice_path( LasersPlus._legacy_settings_save_path
 		LasersPlus:Log("ERROR: Legacy Settings file found at \"" .. tostring(LasersPlus._legacy_settings_save_path) .. "\", but reading failed.")
 	end
 end
+
+--[[
+todo:
+ProcessStrobe()
+legacy settings import
+	- color from rgb to hex
+	- blackmarket qol split into separate settings
+	- strobe enabled changed to use default strobe types
+	- strobe/quality/override speed?
+	- additional strobe addons in saves
+strobes library/navigation?
+
+on player connect, send/save laser info
+
+--]]

@@ -21,18 +21,22 @@
 			"script_path" : "hooks/newraycastweaponbase.lua"
 		},
 		{
+			"hook_id" : "lib/units/weapons/sentrygunweapon",
+			"script_path" : "hooks/sentrygunweapon.lua"
+		},
+		{
 			"hook_id" : "lib/units/weapons/weaponlaser",
 			"script_path" : "hooks/weaponlaser.lua"
 		},
 		{
-			"hook_id" : "lib/units/beings/player/states/vr/playermenu",
+			"hook_id" : "lib/managers/mission/elementlasertrigger",
 			"script_path" : "hooks/worldlaser.lua"
 		}
 	],
 	"disabledhooks" : [
 		{
-			"hook_id" : "lib/managers/mission/elementlasertrigger",
-			"script_path" : "worldlasers.lua"
+			"hook_id" : "lib/units/beings/player/states/vr/playermenu",
+			"script_path" : "vrlasers.lua"
 		},
 		{
 			"hook_id" : "lib/units/weapons/raycastweaponbase",

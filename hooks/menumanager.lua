@@ -1,3 +1,32 @@
+--[[
+	todo:
+	- on colorpicker closed, update existing lasers
+		--pass and call appropriate hook_id
+	
+	
+	-convert old save data
+	-strobes
+		-can be used for flashlights or lasers
+		-dynamically populate
+	- general settings
+		-flashlight and laser syncing
+	-settings/menus
+		QOL settings
+			red laser filter
+			sight gadget keybind
+				- disable normal cycle to gadgets
+				- toggle keybind
+			default sight reticle/color
+				-dynamically populate 
+			
+		laser customization
+			-vr laser
+			-glow/thickness options
+		flashlight customization
+			-flashlight range/angle
+--]]
+
+
 LasersPlus = LasersPlus or {}
 LasersPlus._core = LasersPlus._core or LasersPlusCore
 if LasersPlus._core then 
@@ -6,16 +35,27 @@ else
 	LasersPlus._path = ModPath
 end
 LasersPlus._data_path = SavePath .. "lasersplus_save.txt"
+LasersPlus._menu_path = LasersPlus._path .. "menu/"
 LasersPlus._legacy_save_path = SavePath .. "lasersplus.txt"
 LasersPlus._default_localization_filepath = LasersPlus._path .. "localization/en.json"
 LasersPlus.has_shown_legacy_save_check = false
 
+LasersPlus.hook_id_prefix = "lasersplus_listener_"
 LasersPlus.hook_ids = {
-	changed = "lasersplus_on_gadget_changed"
+	laser = {
+		own = "lasersplus_laser_own_",
+		team = "lasersplus_laser_team_",
+		cop = "lasersplus_laser_cop_",
+		world = "lasersplus_laser_world_",
+		swatturret = "lasersplus_laser_swatturret_",
+		sentrygun = "lasersplus_laser_sentrygun_"
+	},
+	flashlight = {
+		own = "lasersplus_flashlight_own_",
+		team = "lasersplus_flashlight_team_",
+		cop = "lasersplus_flashlight_cop_"
+	}
 }
-for _,hook_id in pairs(LasersPlus.hook_ids) do 
-	Hooks:Register(hook_id)
-end
 
 LasersPlus.default_strobes = {
 	rainbow = {}
@@ -59,9 +99,9 @@ LasersPlus.default_palettes = {
 
 LasersPlus.default_settings = {
 	generic_laser_color_string = "00ff00", --green
-	generic_laser_alpha = 0.7,
+	generic_laser_alpha_value = 0.7,
 	generic_flashlight_color_string = "f0f2d7", --yellow tint
-	generic_flashlight_alpha = 0.9,
+	generic_flashlight_alpha_value = 0.9,
 	
 	own_laser_color_string = "ff9200", --global override for all own weapons
 	own_laser_color_mode = 2,
@@ -70,15 +110,18 @@ LasersPlus.default_settings = {
 		--3: peer
 		--4: strobe
 		--5: invisible
-	own_laser_alpha = 0.8,
+	own_laser_alpha_value = 0.8,
 	own_laser_alpha_mode = 1, -- 1 = vanilla, 2 = custom
 	
-	own_laser_glow_alpha = 1,
+	own_laser_thickness_mode = 1, --1 = vanilla, 2 = custom
+	own_laser_thickness_value = 0.5,
+	
+	own_laser_glow_alpha_value = 1,
 		--glow effect for player lasers
 	own_laser_strobe_id = "rainbow",
 	
 	own_flashlight_color_string = "dfe8f4", -- blue tint
-	own_flashlight_alpha = 0.9,
+	own_flashlight_alpha_value = 0.9,
 	own_flashlight_alpha_mode = 1,
 	own_flashlight_strobe_id = "rainbow",
 	
@@ -92,7 +135,7 @@ LasersPlus.default_settings = {
 	team_laser_strobe_id = "rainbow",
 	
 	team_laser_alpha_mode = 1,
-	team_laser_alpha = 0.7,
+	team_laser_alpha_value = 0.7,
 	
 	--peer colors use teammate alpha values
 	peer1_laser_color_string = "c2fc97",
@@ -122,7 +165,7 @@ LasersPlus.default_settings = {
 	cop_laser_alpha_mode = 1,
 		--1: vanilla
 		--2: custom
-	cop_laser_alpha = 0.9,
+	cop_laser_alpha_value = 0.9,
 --	cop_flashlight_color_string = "e6bfb8", --baked into the asset iirc, can't be changed through lua
 --	cop_flashlight_color_mode = 1,
 	
@@ -137,7 +180,7 @@ LasersPlus.default_settings = {
 	world_laser_alpha_mode = 1,
 		--1: vanilla
 		--2: custom
-	world_laser_alpha = 0.9,
+	world_laser_alpha_value = 0.9,
 	
 	
 	
@@ -148,16 +191,16 @@ LasersPlus.default_settings = {
 		--2: static (solid color, dependent on turret mode)
 		--3: strobe
 		--4: invisible
-	swatturret_mad_laser_color_string = "00ffff", --ecm swat turret color (cyan)
-	swatturret_mad_laser_strobe_id = "rainbow",
 	swatturret_att_laser_color_string = "ff0000", --attack swat turret color (red)
 	swatturret_att_laser_strobe_id = "rainbow",
+	swatturret_mad_laser_color_string = "00ffff", --ecm swat turret color (cyan)
+	swatturret_mad_laser_strobe_id = "rainbow",
 	swatturret_rld_laser_color_string = "ffff00", --reload swat turret color (yellow)
 	swatturret_rld_laser_strobe_id = "rainbow",
 	swatturret_laser_alpha_mode = 1,
 		--1: vanilla
 		--2: custom
-	swatturret_laser_alpha = 0.8,
+	swatturret_laser_alpha_value = 0.8,
 	
 	sentrygun_laser_color_mode = 1,
 		--1: vanilla
@@ -165,18 +208,32 @@ LasersPlus.default_settings = {
 		--3: peer (uses the peer color of player who owns it)
 		--4: strobe
 		--5: invisible
-	sentrygun_auto_laser_color_string = "00ffff", --player sentrygun autofire color (cyan)
+	sentrygun_auto_laser_color_string = "197fff", --player sentrygun autofire color (cyan)
 	sentrygun_auto_laser_strobe_id = "rainbow",
-	sentrygun_ap_laser_color_string = "00ff00", --player sentrygun ap color (green)
+	sentrygun_ap_laser_color_string = "19ff19", --player sentrygun ap color (green)
 	sentrygun_ap_laser_strobe_id = "rainbow",
+	sentrygun_off_laser_color_string = "ff1919",
+	sentrygun_off_laser_strobe_id = "rainbow",
 	sentrygun_laser_alpha_mode = 1,
-	sentrygun_laser_alpha = 0.8
+	sentrygun_laser_alpha_value = 0.8,
+	
+	
+	networking_enabled = true,
+	
+	redfilter_ratio = 0.66,
+	redfilter_enabled = true,
+	
+	sight_override_enabled = true,
+	sight_color = 3,
+	sight_type = 1,
+	
+	multigadget_enabled = true,
+	multigadget_nosightcycle_enabled = true, --if true, sight gadgets are excluded from the normal sight rotation
+	
+	
+	palettes = table.deep_map_copy(LasersPlus.default_palettes)
 }
 LasersPlus.settings = LasersPlus.settings or table.deep_map_copy(LasersPlus.default_settings)
-
---read <2.86 save
---import settings
---give option to delete previous (else save is_converted flag)
 
 
 -- ***** Utils *****
@@ -200,154 +257,178 @@ end
 
 -- ***** Settings Getters *****
 
-function LasersPlus:GetGadgetColor(gadget_data)
+--this looks a bit ugly but it's efficient enough
+function LasersPlus:GetLaserColor(gadget_data)
+
 	local source = gadget_data.source
-	local gadget_type = gadget_data.gadget_type
 	local peer_id = gadget_data.peer_id
 	local is_ai = gadget_data.is_ai
 	
 	local char_id = gadget_data.char_id
 	local team_id = gadget_data.team_id
 	
-	local color,alpha
-	if gadget_type == "laser" then 
-		color = Color(LasersPlus.default_settings.generic_laser_color_string)
-		alpha = LasersPlus.default_settings.generic_laser_alpha
+	local color = Color(LasersPlus.default_settings.generic_laser_color_string)
+	local alpha = LasersPlus.default_settings.generic_laser_alpha_value
+	
+	if source == "own" then
+		local color_mode = self.settings.own_laser_color_mode
+		local alpha_mode = self.settings.own_laser_alpha_mode
+		if alpha_mode == 1 then 
+			alpha = gadget_data.natural_alpha or alpha
+		else
+			alpha = self.settings.own_laser_alpha_value or alpha
+		end
 		
-		if source == "own" then
-			local color_mode = self.settings.own_laser_color_mode
-			local alpha_mode = self.settings.own_laser_alpha_mode
-			if alpha_mode == 1 then 
-				alpha = gadget_data.natural_alpha or alpha
-			else
-				alpha = self.settings.own_laser_alpha or alpha
-			end
-			
-			if color_mode == 1 then --vanilla
-				color = gadget_data.natural_color or color
-			elseif color_mode == 2 then --custom solid color
-				color = self.settings.own_laser_color_string and Color(self.settings.own_laser_color_string) or color
-			elseif color_mode == 3 then --color by peer_id
-				peer_id = peer_id or managers.network:session():local_peer():id()
-				local peercolor = self.settings["peer" .. tostring(peer_id) .. "_laser_color_string"]
-				color = peercolor and Color(peercolor) or color
-			elseif color_mode == 4 then --strobe
-			elseif color_mode == 5 then --invisible
-				color = Color(0,0,0):with_alpha(0)
-				alpha = 0
-			end
-			
-			
-		elseif source == "team" or is_ai then 
-			local color_mode = self.settings.team_laser_color_mode
-			local alpha_mode = self.settings.team_laser_alpha_mode
-			
-			if alpha_mode == 1 then 
-				alpha = gadget_data.natural_alpha or alpha
-			else
-				alpha = self.settings.team_laser_alpha or alpha
-			end
-			
-			if color_mode == 1 then --vanilla
-				color = gadget_data.natural_color or color
-			elseif color_mode == 2 then --custom solid color
-				color = self.settings.team_laser_color_string and Color(self.settings.team_laser_color_string) or color
-			elseif color_mode == 3 then --color by peer_id
-				if peer_id then 
-					local peercolor = self.settings["peer" .. tostring(peer_id) .. "_laser_color_string"]
-					color = peercolor and Color(peercolor) or color
-				end
-			elseif color_mode == 4 then --strobe
-			elseif color_mode == 5 then --invisible
-				color = Color(0,0,0):with_alpha(0)
-				alpha = 0
-			end
-			
-		elseif source == "cop" then 
-			
-			local color_mode = self.settings.cop_laser_color_mode
-			local alpha_mode = self.settings.cop_laser_alpha_mode
-			if alpha_mode == 1 then 
-				alpha = gadget_data.natural_alpha or alpha
-			else
-				alpha = self.settings.cop_laser_alpha or alpha
-			end
-			
-			if color_mode == 1 then --vanilla
-				color = gadget_data.natural_color or color
-			elseif color_mode == 2 then --custom solid color
-				color = self.settings.cop_laser_color_string and Color(self.settings.cop_laser_color_string) or color
-			elseif color_mode == 3 then --strobe
-			elseif color_mode == 4 then --invisible
-				color = Color(0,0,0):with_alpha(0)
-				alpha = 0
-			end
-			
-			
-		elseif source == "world" then 
-			
-			local color_mode = self.settings.world_laser_color_mode
-			local alpha_mode = self.settings.world_laser_alpha_mode
-			if alpha_mode == 1 then 
-				alpha = gadget_data.natural_alpha or alpha
-			else
-				alpha = self.settings.world_laser_alpha or alpha
-			end
-			if color_mode == 1 then --vanilla
-				color = gadget_data.natural_color or color
-			elseif color_mode == 2 then --custom solid color
-				color = self.settings.world_laser_color_string and Color(self.settings.world_laser_color_string) or color
-			elseif color_mode == 3 then --strobe
-			elseif color_mode == 4 then --invisible
-				color = Color(0,0,0):with_alpha(0)
-				alpha = 0
-			end
-			
-		elseif source == "swatturret" then
-			local color_mode = self.settings.swatturret_laser_color_mode
-			local alpha_mode = self.settings.swatturret_laser_alpha_mode
-			if alpha_mode == 1 then 
-				alpha = gadget_data.natural_alpha or alpha
-			else
-				alpha = self.settings.swatturret_laser_alpha or alpha
-			end
-			
-			local sentry_unit
-			if mad then 
-				color = self.settings.swatturret_mad_laser_color_string and Color(self.settings.swatturret_mad_laser_color_string) or color
-			elseif att then 
-				color = self.settings.swatturret_att_laser_color_string and Color(self.settings.swatturret_att_laser_color_string) or color
-			elseif rld then 
-				color = self.settings.swatturret_rld_laser_color_string and Color(self.settings.swatturret_rld_laser_color_string) or color
-			end
-		elseif source == "sentrygun" then
-			local color_mode = self.settings.sentrygun_laser_color_mode
-			local alpha_mode = self.settings.sentrygun_laser_alpha_mode
-			if alpha_mode == 1 then 
-				alpha = gadget_data.natural_alpha or alpha
-			else
-				alpha = self.settings.sentrygun_laser_alpha or alpha
-			end
-			
-			local sentry_unit
-			if ap then 
-				color = self.settings.sentrygun_ap_laser_color_string and Color(self.settings.sentrygun_ap_laser_color_string) or color
-			else
-				color = self.settings.sentrygun_auto_laser_color_string and Color(self.settings.sentrygun_auto_laser_color_string) or color
-			end
+		if color_mode == 1 then --vanilla
+			color = gadget_data.natural_color or color
+		elseif color_mode == 2 then --custom solid color
+			color = self.settings.own_laser_color_string and Color(self.settings.own_laser_color_string) or color
+		elseif color_mode == 3 then --color by peer_id
+			peer_id = peer_id or managers.network:session():local_peer():id()
+			local peercolor = self.settings["peer" .. tostring(peer_id) .. "_laser_color_string"]
+			color = peercolor and Color(peercolor) or color
+		elseif color_mode == 4 then --strobe
+		elseif color_mode == 5 then --invisible
+			color = Color(0,0,0):with_alpha(0)
+			alpha = 0
 		end
 		
 		
+	elseif source == "team" or is_ai then 
+		local color_mode = self.settings.team_laser_color_mode
+		local alpha_mode = self.settings.team_laser_alpha_mode
 		
-	elseif gadget_type == "flashlight" then 
-		color = Color(LasersPlus.default_settings.generic_flashlight_color_string)
-		alpha = LasersPlus.default_settings.generic_flashlight_alpha
-	
-	else
-		color = Color(LasersPlus.default_settings.generic_laser_color_string)
-		alpha = LasersPlus.default_settings.generic_laser_alpha
+		if alpha_mode == 1 then 
+			alpha = gadget_data.natural_alpha or alpha
+		else
+			alpha = self.settings.team_laser_alpha_value or alpha
+		end
+		
+		if color_mode == 1 then --vanilla
+			color = gadget_data.natural_color or color
+		elseif color_mode == 2 then --custom solid color
+			color = self.settings.team_laser_color_string and Color(self.settings.team_laser_color_string) or color
+		elseif color_mode == 3 then --color by peer_id
+			if peer_id then 
+				local peercolor = self.settings["peer" .. tostring(peer_id) .. "_laser_color_string"]
+				color = peercolor and Color(peercolor) or color
+			end
+		elseif color_mode == 4 then --strobe
+		elseif color_mode == 5 then --invisible
+			color = Color(0,0,0):with_alpha(0)
+			alpha = 0
+		end
+		
+	elseif source == "cop" then 
+		
+		local color_mode = self.settings.cop_laser_color_mode
+		local alpha_mode = self.settings.cop_laser_alpha_mode
+		if alpha_mode == 1 then 
+			alpha = gadget_data.natural_alpha or alpha
+		else
+			alpha = self.settings.cop_laser_alpha_value or alpha
+		end
+		
+		if color_mode == 1 then --vanilla
+			color = gadget_data.natural_color or color
+		elseif color_mode == 2 then --custom solid color
+			color = self.settings.cop_laser_color_string and Color(self.settings.cop_laser_color_string) or color
+		elseif color_mode == 3 then --strobe
+		elseif color_mode == 4 then --invisible
+			color = Color(0,0,0):with_alpha(0)
+			alpha = 0
+		end
+		
+		
+	elseif source == "world" then 
+		
+		local color_mode = self.settings.world_laser_color_mode
+		local alpha_mode = self.settings.world_laser_alpha_mode
+		if alpha_mode == 1 then 
+			alpha = gadget_data.natural_alpha or alpha
+		else
+			alpha = self.settings.world_laser_alpha_value or alpha
+		end
+		if color_mode == 1 then --vanilla
+			color = gadget_data.natural_color or color
+		elseif color_mode == 2 then --custom solid color
+			color = self.settings.world_laser_color_string and Color(self.settings.world_laser_color_string) or color
+		elseif color_mode == 3 then --strobe
+		elseif color_mode == 4 then --invisible
+			color = Color(0,0,0):with_alpha(0)
+			alpha = 0
+		end
+		
+	elseif source == "swatturret" then
+		local color_mode = self.settings.swatturret_laser_color_mode
+		local alpha_mode = self.settings.swatturret_laser_alpha_mode
+		
+		local sentry_unit = gadget_data.parent_unit
+		local movement_ext = sentry_unit:movement()
+		if movement_ext:is_activating() or movement_ext:is_inactivating() then 
+			color = self.settings.swatturret_att_laser_color_string and Color(self.settings.swatturret_att_laser_color_string) or color
+			--if inactive then blink
+		elseif movement_ext:is_inactivated() then 
+			color = Color(0,0,0):with_alpha(0)
+			alpha = 0
+		elseif movement_ext:rearming() then 
+			color = self.settings.swatturret_rld_laser_color_string and Color(self.settings.swatturret_rld_laser_color_string) or color
+		elseif movement_ext:team().foes[tweak_data.levels:get_default_team_ID("player")] then
+			color = self.settings.swatturret_att_laser_color_string and Color(self.settings.swatturret_att_laser_color_string) or color
+		else
+			--ecm hacked
+			color = self.settings.swatturret_mad_laser_color_string and Color(self.settings.swatturret_mad_laser_color_string) or color
+		end
+		
+		if alpha_mode == 2 then 
+			alpha = self.settings.swatturret_laser_alpha_value or alpha
+		end
+		
+	elseif source == "sentrygun" then
+		local color_mode = self.settings.sentrygun_laser_color_mode
+		local alpha_mode = self.settings.sentrygun_laser_alpha_mode
+		if alpha_mode == 1 then 
+			alpha = gadget_data.natural_alpha or alpha
+		else
+			alpha = self.settings.sentrygun_laser_alpha_value or alpha
+		end
+		
+		local sentry_unit = gadget_data.parent_unit
+		if ap then 
+			color = self.settings.sentrygun_ap_laser_color_string and Color(self.settings.sentrygun_ap_laser_color_string) or color
+		else
+			color = self.settings.sentrygun_auto_laser_color_string and Color(self.settings.sentrygun_auto_laser_color_string) or color
+		end
 	end
+	
 	return color,alpha
+end
+
+function LasersPlus:GetFlashlightColor(gadget_data)
+	
+	local source = gadget_data.source
+	local peer_id = gadget_data.peer_id
+	local is_ai = gadget_data.is_ai
+	
+	local char_id = gadget_data.char_id
+	local team_id = gadget_data.team_id
+	
+	local color = Color(LasersPlus.default_settings.generic_flashlight_color_string)
+	local alpha = LasersPlus.default_settings.generic_flashlight_alpha_value
+	
+	return color,alpha
+end
+
+function LasersPlus:GetGadgetColor(gadget_data)
+	local gadget_type = gadget_data.gadget_type
+	if gadget_type == "laser" then
+		return self:GetLaserColor(gadget_data)
+	elseif gadget_type == "flashlight" then 
+		return self:GetFlashlightColor(gadget_data)
+	else
+		self:log("Error: GetGadgetColor(): Unknown gadget_type [" .. tostring(gadget_type) .. "]")
+		return Color(LasersPlus.default_settings.generic_laser_color_string),LasersPlus.default_settings.generic_laser_alpha_value
+	end
 end
 
 function LasersPlus:GetGadgetStrobe(gadget_data)	
@@ -445,7 +526,6 @@ function LasersPlus:SetGadgetParams(gadget_type,unit,params)
 	end
 	params = params or {}
 	local unit_key = unit:key()
-	local hook_id_prefix = tostring(unit_key)
 	
 	if not self.registered_gadgets[gadget_type] then
 		self:log("Error: LasersPlus:SetGadgetParams(" .. LasersPlus.table_concat({gadget_type,unit,params},",") .. "): Bad gadget_type")
@@ -457,6 +537,20 @@ function LasersPlus:SetGadgetParams(gadget_type,unit,params)
 		for k,v in pairs(params) do 
 			gadget_data[k] = v
 		end
+		
+		if not (params.color and params.alpha) then
+			--if color or alpha is manually overwritten, don't re-calculate it (at least, not here)
+			local setting_color,setting_alpha = self:GetGadgetColor(gadget_data)
+			if not params.color then
+				gadget_data.color = setting_color
+			end
+			if not params.alpha then
+				gadget_data.alpha = setting_alpha
+			end
+		end
+		
+		self:UnregisterGadgetListeners(gadget_data)
+		self:RegisterGadgetListeners(gadget_data)
 	else
 		self:log("Error: LasersPlus:SetGadgetParams(" .. LasersPlus.table_concat({gadget_type,unit,params},",") .. "): Bad unit_key")
 	end
@@ -476,7 +570,7 @@ function LasersPlus:RegisterGadget(gadget_type,unit,params)
 	
 	params = params or {}
 	local unit_key = params.uid or unit:key()
-	local hook_id_prefix = tostring(unit_key)
+	local gadget_hook_id = self.hook_id_prefix .. tostring(unit_key)
 	
 	local update_func = nil
 	
@@ -495,38 +589,84 @@ function LasersPlus:RegisterGadget(gadget_type,unit,params)
 --		update_func = update_func,
 		strobe_id = 1,
 		strobe_frame = 1,
-		hook_id_prefix = hook_id_prefix
+		gadget_hook_id = gadget_hook_id
 	}
 	local setting_color,setting_alpha = self:GetGadgetColor(gadget_data)
 	self.registered_gadgets[gadget_type][unit_key] = gadget_data
+	gadget_data.color = setting_color
+	gadget_data.alpha = setting_alpha
 
 	local strobe_id = self:GetGadgetStrobe(gadget_data)
 	if strobe_id then 
 --		register updater
 	end
 	
-	Log(gadget_type)
-	Log(setting_color)
-	Log(setting_alpha)
+	
 	if gadget_data.brush then 
-		brush:set_color(setting_color:with_alpha(setting_alpha))
+		gadget_data.set_color_func = function(color,alpha)
+			if color then
+				if alpha then 
+					gadget_data.brush:set_color(color:with_alpha(alpha))
+				else
+					gadget_data.brush:set_color(color)
+				end
+			else
+				--
+			end
+			
+		end
 	elseif alive(unit) then
-		unit:base():set_color(setting_color:with_alpha(setting_alpha))
+		gadget_data.set_color_func = function(color,alpha)
+			if color then
+				if alpha then 
+					unit:base():set_color(color:with_alpha(alpha))
+				else
+					unit:base():set_color(color)
+				end
+			elseif alpha then
+				unit:base():set_color(unit:base():color():with_alpha(alpha))
+			else
+				
+			end
+		end
 	end
-	
-	Hooks:Add(self.hook_ids.changed,hook_id_prefix .. "_" .. self.hook_ids.changed,function()
-		
-	end)
-	
+	if gadget_data.set_color_func then 
+		gadget_data.set_color_func(setting_color,setting_alpha)
+	end
+	self:RegisterGadgetListeners(gadget_data)
 end
 
 function LasersPlus:UnregisterGadget(gadget_type,unit,unit_key)
 	unit_key = unit_key or unit:key()
 	if gadget_type and self.registered_gadgets[gadget_type] then
+		local gadget_data = self.registered_gadgets[gadget_type][unit_key]
+		self:UnregisterGadgetListeners(gadget_data)
 		self.registered_gadgets[gadget_type][unit_key] = nil
 	end
 end
 
+function LasersPlus:GetGadgetData(gadget_type,unit,unit_key)
+	if gadget_type and self.registered_gadgets[gadget_type] then
+		local gadget_data = self.registered_gadgets[gadget_type][unit_key]
+		
+		return gadget_data
+	end
+end
+
+function LasersPlus:RegisterGadgetListeners(gadget_data)
+	if gadget_data and gadget_data.set_color_func then 
+		local hook_id = self.hook_ids[gadget_data.gadget_type][gadget_data.source]
+		if hook_id then
+			Hooks:Add(hook_id,gadget_data.gadget_hook_id,gadget_data.set_color_func)
+		end
+	end
+end
+
+function LasersPlus:UnregisterGadgetListeners(gadget_data)
+	if gadget_data then
+		Hooks:Remove(gadget_data.gadget_hook_id)
+	end
+end
 
 -- ***** Strobes *****
 function LasersPlus:StrobeTableToString(data)
@@ -614,6 +754,151 @@ end
 
 -- ***** Menu/ColorPicker callbacks *****
 
+function LasersPlus:SetColorPickerPalettes(palettes)
+	for i,color in ipairs(palettes) do 
+		self.settings.palettes[i] = ColorPicker.color_to_hex(color)
+	end
+end
+
+function LasersPlus:GetColorPickerPalettes()
+	local palettes = {}
+	for i,color_string in ipairs(self.settings.palettes) do 
+		palettes[i] = Color(color_string)
+	end
+	return palettes
+end
+
+function LasersPlus:GetDefaultColorPickerPalettes()
+	local palettes = {}
+	for i,color_string in ipairs(self.default_palettes) do 
+		palettes[i] = Color(color_string)
+	end
+	return palettes
+end
+
+function LasersPlus:CreateColorPicker()
+	if ColorPicker and not self._colorpicker then 
+		self._colorpicker = ColorPicker:new(
+			"lasersplus_colorpicker",
+			{
+				color = Color.white,
+				palettes = self:GetColorPickerPalettes(),
+				default_palettes = self:GetDefaultColorPickerPalettes(),
+				done_callback = function(new_color,palettes,success)
+				end,
+				changed_callback = function(new_color)
+				end
+			},
+			callback(self,self,"callback_colorpicker_created")
+		)
+	end
+end
+
+function LasersPlus:callback_colorpicker_created(obj)
+	self._colorpicker = self._colorpicker or obj
+end
+
+function LasersPlus:callback_open_colorpicker(setting,preview_object)
+	if ColorPicker then 
+		if self._colorpicker then 
+			self._colorpicker:Show({
+				color = Color(self.settings[setting]),
+				palettes = self:GetColorPickerPalettes(),
+				default_palettes = self:GetDefaultColorPickerPalettes(),
+				done_callback = function(new_color,palettes,success)
+					if success then 
+						self.settings[setting] = ColorPicker.color_to_hex(new_color)
+						if alive(preview_object) then 
+							preview_object:set_color(new_color)
+						end
+						self:SetColorPickerPalettes(palettes)
+--						if cb then 
+--							
+--						end
+						self:Save()
+					end 
+				end,
+				changed_callback = function(new_color)
+					if alive(preview_object) then 
+						preview_object:set_color(new_color)
+					end
+				end
+			})
+		end
+	else
+		self:callback_show_colorpicker_prompt()
+		return
+	end
+end
+
+--[[
+LasersPlus.preview_square_placement = {
+	size = 24,
+	laser = {
+		own = {
+			x = 1,
+			y = 1,
+		},
+		team = {
+			x = 1,
+			y = 1,
+		},
+		peer1 = {
+			x = 1,
+			y = 1,
+		},
+		peer2 = {
+			x = 1,
+			y = 1,
+		},
+		peer3 = {
+			x = 1,
+			y = 1,
+		},
+		peer4 = {
+			x = 1,
+			y = 1,
+		},
+		cop = {
+			x = 1,
+			y = 1,
+		},
+		world = {
+			x = 1,
+			y = 1,
+		},
+		swatturret_att = {
+			x = 1,
+			y = 1,
+		},
+		swatturret_rld = {
+			x = 1,
+			y = 1,
+		},
+		swatturret_mad = {
+			x = 1,
+			y = 1,
+		},
+		sentrygun_auto = {
+			x = 1,
+			y = 1,
+		},
+		sentrygun_ap = {
+			x = 1,
+			y = 1,
+		},
+		sentrygun_off = {
+			x = 1,
+			y = 1,
+		}
+	}
+}
+
+function LasersPlus:ShowPreview()
+	
+end
+--]]
+
 function LasersPlus:callback_show_colorpicker_prompt()
 	QuickMenu:new(managers.localization:text("menu_lasersplus_missing_colorpicker_title"),string.gsub(managers.localization:text("menu_lasersplus_missing_colorpicker_desc"),"$URL","https://modworkshop.net/mod/29641"),{
 		{
@@ -643,9 +928,132 @@ function LasersPlus:ArchiveLegacySettingsFile(to_archive)
 	end
 end
 
+--import settings from versions of LasersPlus prior to v3
 function LasersPlus:ImportLegacySettings(legacy_data)
+	local function rgb_to_hex_string(r,g,b)
+		return string.format("%x%x%x",(r or 1) * 255,(g or 1) * 255,(b or 1) * 255)
+	end
+	local new_data = {}
+	
+	local own_laser_color_string = rgb_to_hex_string(legacy_data.own_laser_red,legacy_data.own_laser_green,legacy_data.own_laser_blue)
+	local own_laser_alpha_value = legacy_data.own_laser_alpha_value
 	
 	
+	--[[
+	enabled_mod_master = true,
+	--if false, this mod does not do stuff
+	--if true, this mod does stuff
+	
+	enabled_laser_strobes_master = true,
+	--if false, this mod will not render any strobes, and will instead opt for solid-color lasers if applicable
+	
+	enabled_flashlight_strobes_master = false,
+	--no callback yet
+
+	enabled_networking = true,
+--if true:
+--* sends your custom laser strobe pattern to other clients
+--* receives custom strobe patterns from other Lasers+ clients and displays them
+--on by default
+
+	override_speed = 1,
+	--higher numbers will make lasers faster, at no additional performance cost
+	
+	quality = 5,
+	--scale of 1 to 10, which is the frame interval at which the game updates lasers
+	--lower quality number is lower/worse performance, ie bad
+	--higher quality number is higher/better performance, ie gud
+	max_red_ratio = 0.66, --currently no menu setting for this. 0.66 is quite strict, 0.5 is probably better
+	own_laser_display_mode = 3,
+	own_flashlight_display_mode = 2,
+	team_laser_display_mode = 3,
+	team_flashlight_display_mode = 2,
+	cop_flashlight_display_mode = 2,
+	world_display_mode = 3,
+	turret_display_mode = 3,
+	sniper_display_mode = 3,
+
+	own_laser_strobe_enabled = true,
+	own_flashlight_strobe_enabled = true,
+	team_laser_strobe_enabled = true,
+	team_flashlight_strobe_enabled = true,
+	world_strobe_enabled = true,
+	sniper_strobe_enabled = true,
+	turret_strobe_enabled = true,
+	npc_flashlight_strobe_enabled = true,
+	
+	own_laser_red = 0.3,
+	own_laser_green = 0.3,
+	own_laser_blue = 1,
+	own_laser_alpha = 1,
+	
+	own_flash_red = 0.01,
+	own_flash_green = 0.03,
+	own_flash_blue = 0.3,
+	own_flash_alpha = 1,
+	flashlight_glow_opacity = 16, --new: light cone effect
+	flashlight_range = 10,
+	flashlight_angle = 60,
+	
+	team_laser_red = 0.9,
+	team_laser_green = 0.9,
+	team_laser_blue = 0.3,
+	team_laser_alpha = 0.7,
+	
+	team_flash_red = 0.01,
+	team_flash_green = 0.03,
+	team_flash_blue = 0.3,
+	team_flash_alpha = 0.7,
+	
+	npc_flash_red = 0.01,
+	npc_flash_green = 0.03,
+	npc_flash_blue = 0.3,
+	npc_flash_alpha = 0.7,
+	
+	wl_red = 1,
+	wl_green = 0.2,
+	wl_blue = 0,
+	wl_alpha = 1,
+	
+	snpr_red = 1,
+	snpr_green = 0,
+	snpr_blue = 0.3,
+	snpr_alpha = 1,
+
+	turr_att_red = 1,
+	turr_att_green = 0.3,
+	turr_att_blue = 0,
+	turr_att_alpha = 1,
+
+	turr_rld_red = 0.7,
+	turr_rld_green = 1,
+	turr_rld_blue = 0,
+	turr_rld_alpha = 1,
+
+	turr_mad_red = 0,
+	turr_mad_green = 1,
+	turr_mad_blue = 1,
+	turr_mad_alpha = 1,
+	
+	enabled_redfilter = false,
+	enabled_blackmarket_qol = true,
+	sight_color = 3,
+	sight_type = 1,
+	enabled_multigadget = true,
+	disabled_sight_cycle = false
+	--]]
+	
+	
+	local own_laser_color_mode = own_laser_display_mode
+	local team_laser_color_mode = team_laser_display_mode
+	local world_laser_color_mode = world_laser_display_mode
+	local swatturret_laser_color_mode = turret_laser_display_mode
+	local cop_laser_color_mode = sniper_display_mode
+
+	for k,v in pairs(new_settings) do 
+		self.settings[k] = v
+	end
+
 end
 
 function LasersPlus:RemoveLegacySettingsFile()
@@ -655,6 +1063,8 @@ end
 -- ***** I/O *****
 
 function LasersPlus:Load()
+	do return end
+	
 	local file = io.open(self._data_path, "r")
 	if (file) then
 		for k, v in pairs(json.decode(file:read("*all"))) do
@@ -675,6 +1085,7 @@ function LasersPlus:Load()
 end
 
 function LasersPlus:Save()
+	do return end
 --[[
 --	local result = LasersPlus:StrobeTableToString(LasersPlus.own_laser_strobe)
 --	self.settings.saved_strobe = result
@@ -690,7 +1101,7 @@ end
 
 	
 -- ***** Receive Data *****
-Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(sender, message, data)
+Hooks:Add("NetworkReceivedData", "LasersPlus_NetworkReceivedData", function(sender, message, data)
 --[[
 	if message == LasersPlus.LuaNetID or message == LasersPlus.LegacyID then
 		local criminals_manager = managers.criminals
@@ -744,14 +1155,216 @@ end)
 
 -- ***** Localization and Menus *****
 
-Hooks:Add("LocalizationManagerPostInit", "LocalizationManagerPostInit_LasersPlus", function( loc )
+Hooks:Add("LocalizationManagerPostInit", "LasersPlus_LocalizationManagerPostInit", function( loc )
 	if not BeardLib then 
 		loc:load_localization_file( LasersPlus._default_localization_filepath )
 	end
 end)
 
 
-Hooks:Add( "MenuManagerInitialize", "MenuManagerInitialize_LasersPlus", function(menu_manager)
+Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(menu_manager)
+--	LasersPlus:Load()
+	LasersPlus:CreateColorPicker()
 
+	MenuCallbackHandler.callback_lasersplus_menu_main_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_main_focused = function(self,focused)
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_menu_general_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_general_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_own_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_own_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_team_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_team_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_peercolors_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_peercolors_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_world_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_world_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_swatturret_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_swatturret_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_sentrygun_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_sentrygun_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_vr_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_vr_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_flashlights_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_flashlights_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_flashlights_own_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_flashlights_own_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_flashlights_team_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_flashlights_team_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_flashlights_peercolors_focused = function(self,focused)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_flashlights_peercolors_back = function(self)
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_own_color_mode = function(self,item)
+		local index = item:value()
+		LasersPlus.settings.own_laser_color_mode = index
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_own_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("own_laser_color_string",preview_square)
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_own_alpha_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.own_laser_alpha_mode = mode
+		--apply changes to preview
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_own_alpha_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.own_laser_alpha_value = alpha
+		--apply changes to preview
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_own_thickness_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.own_laser_thickness_mode = mode
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_own_thickness_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.own_laser_thickness_value = alpha
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_team_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("team_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer1_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("peer1_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer2_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("peer2_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer3_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("peer3_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer4_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("peer4_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_cop_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("cop_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_world_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("world_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_att_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("swatturret_att_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_mad_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("swatturret_mad_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_rld_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("swatturret_rld_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_auto_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("sentrygun_auto_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_ap_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("sentrygun_ap_laser_color_string",preview_square)
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_off_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("sentrygun_off_laser_color_string",preview_square)
+	end
+	
+	
+	MenuCallbackHandler.callback_lasersplus_general_toggle_networking = function(self,item)
+		self.settings.networking_enabled = item:value() == "on"
+		LasersPlus:Save()
+	end
+	
+	
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_main.json", LasersPlus, LasersPlus.settings)
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_general.json", LasersPlus, LasersPlus.settings)
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_qol.json", LasersPlus, LasersPlus.settings)
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_lasers.json", LasersPlus, LasersPlus.settings)
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_lasers_own.json", LasersPlus, LasersPlus.settings)
+	
 end)
 
+Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_LasersPlus", function(menu_manager, nodes)
+	
+	
+	--populate extra multiplechoice options here
+	
+	--[[
+	MenuHelper:AddToggle({
+		id = "lasersplus_menu_general_networking",
+		title = "menu_lasersplus_menu_general_networking_title",
+		desc = "menu_lasersplus_menu_general_networking_desc",
+		callback = "callback_lasersplus_general_toggle_networking",
+		value = AdvancedCrosshair.settings.networking_enabled,
+		menu_id = "lasersplus_menu_general",
+		priority = 1
+	})
+	--]]
+	
+end)
+
+do return end
+
+Hooks:Add("MenuManagerSetupCustomMenus", "LasersPlus_MenuManagerSetupCustomMenus", function(menu_manager, nodes)
+	MenuHelper:NewMenu("lasersplus_menu_main")
+	
+	
+	MenuHelper:NewMenu("lasersplus_menu_general")
+	
+	MenuHelper:NewMenu("lasersplus_menu_strobes")
+
+	MenuHelper:NewMenu("lasersplus_menu_qol")
+	
+	
+	MenuHelper:NewMenu("lasersplus_menu_lasers")
+	MenuHelper:NewMenu("lasersplus_menu_lasers_own")
+	MenuHelper:NewMenu("lasersplus_menu_lasers_team")
+	MenuHelper:NewMenu("lasersplus_menu_lasers_peercolors")
+	MenuHelper:NewMenu("lasersplus_menu_lasers_world")
+	MenuHelper:NewMenu("lasersplus_menu_lasers_swatturret")
+	MenuHelper:NewMenu("lasersplus_menu_lasers_sentrygun")
+	MenuHelper:NewMenu("lasersplus_menu_lasers_vr")
+	
+	MenuHelper:NewMenu("lasersplus_menu_flashlights")
+	MenuHelper:NewMenu("lasersplus_menu_flashlights_own")
+	MenuHelper:NewMenu("lasersplus_menu_flashlights_team")
+	MenuHelper:NewMenu("lasersplus_menu_flashlights_peercolors")
+end)
+
+
+--[[
+	for k,v in pairs(LasersPlus.registered_gadgets.laser) do 
+		logall(v)
+		Log(" ")
+	end
+--]]

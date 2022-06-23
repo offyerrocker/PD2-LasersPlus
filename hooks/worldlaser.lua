@@ -1,5 +1,5 @@
 Hooks:PostHook(ElementLaserTrigger,"init","LasersPlus_ElementLaserTrigger_init",function(self,...)
-	local natural_color = self.COLORS[self._values.color]
+	local natural_color = Color(unpack(self.COLORS[self._values.color]))
 	LasersPlus:RegisterGadget("laser",nil,{
 		uid = tostring(self), --should be a unique table address
 		brush = self._brush,
@@ -9,6 +9,6 @@ Hooks:PostHook(ElementLaserTrigger,"init","LasersPlus_ElementLaserTrigger_init",
 	})
 end)
 
-Hooks:PostHook(ElementLaserTrigger,"remove_callback","LasersPlis_ElementLaserTrigger_remove_callback",function(self,...)
-	
+Hooks:PostHook(ElementLaserTrigger,"remove_callback","LasersPlus_ElementLaserTrigger_remove_callback",function(self,...)
+	LasersPlus:UnregisterGadget("laser",nil,tostring(self))
 end)

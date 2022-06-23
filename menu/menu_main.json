@@ -1,0 +1,8 @@
+{
+	"menu_id" : "lasersplus_menu_main",
+	"parent_menu_id" : "blt_options",
+	"title" : "lasersplus_menu_main_title",
+	"back_callback" : "callback_lasersplus_menu_main_back",
+	"focus_changed_callback" : "callback_lasersplus_menu_main_focused",
+	"items" : []
+}
