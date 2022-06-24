@@ -31,12 +31,17 @@ Hooks:PostHook(NewRaycastWeaponBase,"clbk_assembly_complete","LasersPlus_NewRayc
 						local _user_unit = self._setup and self._setup.user_unit
 						if _user_unit then
 							local _source,_peer_id,_is_ai = LasersPlus:GetUserUnitData(_user_unit)
-							LasersPlus:SetGadgetParams(gadget_type,unit,{
-								source = _source,
-								peer_id = _peer_id,
-								is_ai = _is_ai,
-								parent_unit = _user_unit
-							})
+							LasersPlus:SetGadgetParams(
+								gadget_type,
+								unit,
+								{
+									source = _source,
+									peer_id = _peer_id,
+									is_ai = _is_ai,
+									parent_unit = _user_unit
+								},
+								true
+							)
 						end
 						Hooks:RemovePostHook(detect_user_unit_posthook_id)
 					end)

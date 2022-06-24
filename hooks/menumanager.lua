@@ -57,6 +57,87 @@ LasersPlus.hook_ids = {
 	}
 }
 
+LasersPlus.preview_square_size = 24
+LasersPlus.preview_square_placement = {
+	laser = {
+		own = {
+			setting_name = "own_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		team = {
+			setting_name = "team_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		peer1 = {
+			setting_name = "peer1_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		peer2 = {
+			setting_name = "peer2_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		peer3 = {
+			setting_name = "peer3_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		peer4 = {
+			setting_name = "peer4_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		cop = {
+			setting_name = "cop_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		world = {
+			setting_name = "world_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		swatturret_att = {
+			setting_name = "swatturret_att_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		swatturret_rld = {
+			setting_name = "swatturret_mad_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		swatturret_mad = {
+			setting_name = "swatturret_rld_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		sentrygun_auto = {
+			setting_name = "sentrygun_auto_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		sentrygun_ap = {
+			setting_name = "sentrygun_ap_laser_color_string",
+			x = 670,
+			y = 100
+		},
+		sentrygun_off = {
+			setting_name = "sentrygun_off_laser_color_string",
+			x = 670,
+			y = 100
+		}
+	}
+}
+
+LasersPlus._menu_preview_objects = {
+	colors = {},
+	reticles = {}
+}
+
 LasersPlus.default_strobes = {
 	rainbow = {}
 }
@@ -224,10 +305,10 @@ LasersPlus.default_settings = {
 	redfilter_enabled = true,
 	
 	sight_override_enabled = true,
-	sight_color = 3,
-	sight_type = 1,
+	sight_color_index = 2,
+	sight_texture_index = 1,
 	
-	multigadget_enabled = true,
+	multigadget_switch_enabled = true,
 	multigadget_nosightcycle_enabled = true, --if true, sight gadgets are excluded from the normal sight rotation
 	
 	
@@ -252,10 +333,42 @@ function LasersPlus.table_concat(tbl,div)
 end
 
 function LasersPlus:log(...)
-	return _G.Log(...) or log(...)
+	if _G.Log then
+		return _G.Log(...)
+	else
+		return log(...)
+	end
 end
 
--- ***** Settings Getters *****
+-- ***** Settings *****
+
+function LasersPlus:IsQOLSightSwitchEnabled()
+	return self.settings.sight_override_enabled
+end
+
+function LasersPlus:GetSightTextureIndex()
+	return self.settings.sight_texture_index
+end
+
+function LasersPlus:GetSightColorIndex()
+	return self.settings.sight_color_index
+end
+
+function LasersPlus:IsQOLRedFilterEnabled()
+	return self.settings.redfilter_enabled
+end
+
+function LasersPlus:GetRedFilterRatio()
+	return self.settings.redfilter_ratio
+end
+
+function LasersPlus:IsQOLMultiGadgetSwitchEnabled()
+	return self.settings.multigadget_switch_enabled
+end
+
+function LasersPlus:IsQOLMultiGadgetSightCycleEnabled()
+	return self.settings.multigadget_nosightcycle_enabled
+end
 
 --this looks a bit ugly but it's efficient enough
 function LasersPlus:GetLaserColor(gadget_data)
@@ -427,7 +540,7 @@ function LasersPlus:GetGadgetColor(gadget_data)
 		return self:GetFlashlightColor(gadget_data)
 	else
 		self:log("Error: GetGadgetColor(): Unknown gadget_type [" .. tostring(gadget_type) .. "]")
-		return Color(LasersPlus.default_settings.generic_laser_color_string),LasersPlus.default_settings.generic_laser_alpha_value
+		return Color(LasersPlus.default_settings.generic_laser_color_string),LasersPlus.default_settings.generic_laser_alpha_value,true
 	end
 end
 
@@ -485,11 +598,6 @@ function LasersPlus:GetGadgetStrobe(gadget_data)
 	end
 end
 
--- ***** Settings Setters *****
-
-
-
-
 -- ***** Laser/Flashlight Management *****
 
 
@@ -519,7 +627,7 @@ function LasersPlus:GetUserUnitData(user_unit)
 	return source,peer_id,is_ai
 end
 
-function LasersPlus:SetGadgetParams(gadget_type,unit,params)
+function LasersPlus:SetGadgetParams(gadget_type,unit,params,check_color)
 	if not alive(unit) then 
 		self:log("Error: LasersPlus:SetGadgetParams(" .. LasersPlus.table_concat({gadget_type,unit,params},",") .. "): Bad unit")
 		return
@@ -538,15 +646,12 @@ function LasersPlus:SetGadgetParams(gadget_type,unit,params)
 			gadget_data[k] = v
 		end
 		
-		if not (params.color and params.alpha) then
+		if check_color then
 			--if color or alpha is manually overwritten, don't re-calculate it (at least, not here)
-			local setting_color,setting_alpha = self:GetGadgetColor(gadget_data)
-			if not params.color then
-				gadget_data.color = setting_color
-			end
-			if not params.alpha then
-				gadget_data.alpha = setting_alpha
-			end
+--			local setting_color,setting_alpha = self:GetGadgetColor(gadget_data)
+--			gadget_data.color = setting_color
+--			gadget_data.alpha = setting_alpha
+			self:CheckGadget(gadget_data)
 		end
 		
 		self:UnregisterGadgetListeners(gadget_data)
@@ -587,10 +692,11 @@ function LasersPlus:RegisterGadget(gadget_type,unit,params)
 		is_ai = params.is_ai, --if specifically teammate ai
 		natural_color = params.natural_color,
 --		update_func = update_func,
-		strobe_id = 1,
-		strobe_frame = 1,
+--		strobe_id = nil, --string
+--		strobe_frame = nil, --int
 		gadget_hook_id = gadget_hook_id
 	}
+	gadget_data.strobe_id = self:GetGadgetStrobe(gadget_data)
 	local setting_color,setting_alpha = self:GetGadgetColor(gadget_data)
 	self.registered_gadgets[gadget_type][unit_key] = gadget_data
 	gadget_data.color = setting_color
@@ -647,6 +753,7 @@ end
 
 function LasersPlus:GetGadgetData(gadget_type,unit,unit_key)
 	if gadget_type and self.registered_gadgets[gadget_type] then
+		unit_key = unit_key or unit:key()
 		local gadget_data = self.registered_gadgets[gadget_type][unit_key]
 		
 		return gadget_data
@@ -798,7 +905,7 @@ function LasersPlus:callback_colorpicker_created(obj)
 	self._colorpicker = self._colorpicker or obj
 end
 
-function LasersPlus:callback_open_colorpicker(setting,preview_object)
+function LasersPlus:callback_open_colorpicker(setting,done_cb,changed_cb)
 	if ColorPicker then 
 		if self._colorpicker then 
 			self._colorpicker:Show({
@@ -808,21 +915,16 @@ function LasersPlus:callback_open_colorpicker(setting,preview_object)
 				done_callback = function(new_color,palettes,success)
 					if success then 
 						self.settings[setting] = ColorPicker.color_to_hex(new_color)
-						if alive(preview_object) then 
-							preview_object:set_color(new_color)
-						end
 						self:SetColorPickerPalettes(palettes)
---						if cb then 
---							
---						end
+						
+						if done_cb then 
+							done_cb(new_color,palettes,success)
+						end
+						
 						self:Save()
 					end 
 				end,
-				changed_callback = function(new_color)
-					if alive(preview_object) then 
-						preview_object:set_color(new_color)
-					end
-				end
+				changed_callback = changed_cb
 			})
 		end
 	else
@@ -831,73 +933,191 @@ function LasersPlus:callback_open_colorpicker(setting,preview_object)
 	end
 end
 
---[[
-LasersPlus.preview_square_placement = {
-	size = 24,
-	laser = {
-		own = {
-			x = 1,
-			y = 1,
-		},
-		team = {
-			x = 1,
-			y = 1,
-		},
-		peer1 = {
-			x = 1,
-			y = 1,
-		},
-		peer2 = {
-			x = 1,
-			y = 1,
-		},
-		peer3 = {
-			x = 1,
-			y = 1,
-		},
-		peer4 = {
-			x = 1,
-			y = 1,
-		},
-		cop = {
-			x = 1,
-			y = 1,
-		},
-		world = {
-			x = 1,
-			y = 1,
-		},
-		swatturret_att = {
-			x = 1,
-			y = 1,
-		},
-		swatturret_rld = {
-			x = 1,
-			y = 1,
-		},
-		swatturret_mad = {
-			x = 1,
-			y = 1,
-		},
-		sentrygun_auto = {
-			x = 1,
-			y = 1,
-		},
-		sentrygun_ap = {
-			x = 1,
-			y = 1,
-		},
-		sentrygun_off = {
-			x = 1,
-			y = 1,
-		}
-	}
-}
-
-function LasersPlus:ShowPreview()
-	
+--for all specified gadgets, performs custom checks on individual gadget data 
+--and apply colors/alpha appropriately
+function LasersPlus:CheckGadgetsByType(gadget_type,source)
+	for uid,gadget_data in pairs(self.registered_gadgets[gadget_type]) do 
+		self:CheckGadget(gadget_data)
+	end
 end
---]]
+
+function LasersPlus:CheckGadget(gadget_data)
+	if not gadget_data.strobe_id then 
+		local color,alpha,is_fallback = self:GetGadgetColor(gadget_data)
+		if not is_fallback then 
+			gadget_data.set_color_func(color,alpha)
+		end
+	end
+end
+
+function LasersPlus:get_colorpicker_closed_callback(menu_gadget_type,menu_preview_type,...)
+	return function(new_color,palettes,success)
+		--check all gadgets here
+		if success then
+			for gadget_type,v in pairs(self.registered_gadgets) do 
+				for uid,gadget_data in pairs(v) do 
+					self:CheckGadget(gadget_data)
+				end
+			end
+			
+			self:SetMenuPreviewColor(menu_gadget_type,menu_preview_type,new_color)
+		end
+	end
+end
+
+function LasersPlus:callback_close_colorpicker(gadget_type,source,color)
+	if gadget_type and source then
+		self:SetMenuPreviewColor(gadget_type,source,color)
+--		Hooks:Call(self.hook_ids[gadget_type][source],color)
+	end
+end
+
+function LasersPlus:SetMenuPreviewColor(menu_gadget_type,menu_preview_type,color)
+	if self._menu_preview_objects.colors[menu_gadget_type] then 
+		local preview_square = self._menu_preview_objects.colors[menu_gadget_type][menu_preview_type]
+		if preview_square and alive(preview_square) then
+			preview_square:set_color(color)
+		else
+			self:log("Error: LasersPlus:SetMenuPreviewColor(" .. self.table_concat({menu_gadget_type,menu_preview_type,color},",") .. "): Bad preview object")
+			return
+		end
+	end
+end
+
+function LasersPlus:CheckMenuPreviewReticleColor()
+
+	local ws = managers.menu_component and managers.menu_component._ws
+	local parent_panel = ws and ws:panel()
+	if not (parent_panel and alive(parent_panel)) then 
+		return
+	end
+	
+	local panel = parent_panel:child("lasersplus_menu_previews")
+	if alive(panel) then 
+		local preview_reticle = panel:child("preview_reticle")
+		if not alive(preview_reticle) then 
+			self:log("Error: CheckMenuPreviewReticleColor(): Bad preview object")
+			return
+		end
+		
+		local selected_reticle_texture = self:GetSightTextureIndex()
+		local selected_reticle_color = self:GetSightColorIndex()
+		
+		local weapon_texture_switches = tweak_data.gui.weapon_texture_switches
+		local sight_switch_data = weapon_texture_switches.types.sight
+		local suffix = sight_switch_data.suffix
+		local color_index_data = weapon_texture_switches.color_indexes
+		
+		local reticle_switch = sight_switch_data[selected_reticle_texture] or sight_switch_data[1]
+		local color_index = color_index_data[selected_reticle_color] or color_index_data[1]
+		local color_name = color_index.color
+		local reticle_texture = string.gsub(reticle_switch.texture_path,suffix,"_" .. color_name .. suffix)
+		
+		preview_reticle:set_image(reticle_texture)
+--		preview_reticle:set_size()
+	end
+end
+
+function LasersPlus:SetMenuPreviewVisible(menu_gadget_type,menu_source,visible)
+	if menu_gadget_type == "reticle" then 
+		local preview_reticle = self._menu_preview_objects.reticles[1]
+		if alive(preview_reticle) then 
+			preview_reticle:set_visible(visible)
+		else
+			self:log("Error: SetMenuPreviewVisible(" .. self.table_concat({menu_gadget_type,menu_source,visible},",") .. "): Bad preview object")
+		end
+	elseif menu_gadget_type and self._menu_preview_objects.colors[menu_gadget_type] then 
+		if menu_source and self._menu_preview_objects.colors[menu_gadget_type][menu_source] then 
+			local preview_square = self._menu_preview_objects.colors[menu_gadget_type][menu_source] 
+			if alive(preview_square) then
+				preview_square:set_visible(visible)
+			else
+				self:log("Error: SetMenuPreviewVisible(" .. self.table_concat({menu_gadget_type,menu_source,visible},",") .. "): Bad preview object")
+			end
+		end
+	end
+end
+
+function LasersPlus:CreateMenuPreviews()
+	local ws = managers.menu_component and managers.menu_component._ws
+	local parent_panel = ws and ws:panel()
+	if not alive(parent_panel) then 
+		self:log("Error: CreateMenuPreviews() No parent panel!")
+		return
+	end
+	
+	if not alive(parent_panel:child("lasersplus_menu_previews")) then 
+		local panel = parent_panel:panel({
+			name = "lasersplus_menu_previews"
+		})
+		
+		local size = LasersPlus.preview_square_size
+		
+		for gadget_type,v in pairs(LasersPlus.preview_square_placement) do 
+			self._menu_preview_objects.colors[gadget_type] = {}
+			for source,source_data in pairs(v) do 
+				local color_string = source_data.setting_name and self.settings[source_data.setting_name] or LasersPlus.default_settings.generic_laser_color_string
+				local preview_square = panel:rect({
+					name = source,
+					x = source_data.x,
+					y = source_data.y,
+					w = size,
+					h = size,
+					visible = false,
+					color = Color(color_string),
+					layer = 1
+				})
+				self._menu_preview_objects.colors[gadget_type][source] = preview_square
+			end
+		end
+		
+		local selected_reticle_texture = self:GetSightTextureIndex()
+		local selected_reticle_color = self:GetSightColorIndex()
+		
+		local weapon_texture_switches = tweak_data.gui.weapon_texture_switches
+		local sight_switch_data = weapon_texture_switches.types.sight
+		local suffix = sight_switch_data.suffix
+		local color_index_data = weapon_texture_switches.color_indexes
+		
+		local reticle_switch = sight_switch_data[selected_reticle_texture] or sight_switch_data[1]
+		local color_index = color_index_data[selected_reticle_color] or color_index_data[1]
+		local color_name = color_index.color
+		local reticle_texture = string.gsub(reticle_switch.texture_path,suffix,"_" .. color_name .. suffix)
+		
+		local preview_reticle = panel:bitmap({
+			name = "preview_reticle",
+			texture = reticle_texture,
+			visible = false,
+			x = 700,
+			y = 100,
+			w = size,
+			h = size,
+			layer = 1
+		})
+		self._menu_preview_objects.reticles[1] = preview_reticle
+		--[[
+		for texture_index,texture_switch_data in ipairs(sight_switch_data) do 
+			local name_id = texture_switch_data.name_id
+			local base_texture_path = texture_switch_data.texture_path
+			local dlc = texture_switch_data.dlc
+			
+			for color_index,color_index_data in ipairs(weapon_texture_switches.color_indexes) do 
+				local color_name = color_index_data.color
+				local concatenated_texture_path = string.gsub(base_texture_path,suffix,"_" .. color_name .. suffix)
+				
+				local preview_reticle = panel:bitmap({
+					name = tostring(texture_index) .. "_" .. tostring(color_index),
+					texture = concatenated_texture_path,
+					w = size,
+					h = size,
+					layer = 1
+				})
+			end
+			
+		end
+		--]]
+	end
+end
 
 function LasersPlus:callback_show_colorpicker_prompt()
 	QuickMenu:new(managers.localization:text("menu_lasersplus_missing_colorpicker_title"),string.gsub(managers.localization:text("menu_lasersplus_missing_colorpicker_desc"),"$URL","https://modworkshop.net/mod/29641"),{
@@ -1163,145 +1383,186 @@ end)
 
 
 Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(menu_manager)
---	LasersPlus:Load()
+	LasersPlus:Load()
 	LasersPlus:CreateColorPicker()
-
+	
+			
 	MenuCallbackHandler.callback_lasersplus_menu_main_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_main_focused = function(self,focused)
 	end
 	
+	MenuCallbackHandler.callback_lasersplus_menu_general_focused = function(self,focused)
+	end
 	MenuCallbackHandler.callback_lasersplus_menu_general_back = function(self)
 	end
-	MenuCallbackHandler.callback_lasersplus_menu_general_focused = function(self,focused)
+	MenuCallbackHandler.callback_lasersplus_menu_qol_focused = function(self,focused)
+		LasersPlus:SetMenuPreviewVisible("reticle",nil,true)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_qol_back = function(self)
 	end
-	MenuCallbackHandler.callback_lasersplus_menu_qol_focused = function(self,focused)
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_focused = function(self,focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_back = function(self)
 	end
-	MenuCallbackHandler.callback_lasersplus_menu_lasers_focused = function(self,focused)
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_own_focused = function(self,focused)
+		LasersPlus:SetMenuPreviewVisible("laser","own",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_own_back = function(self)
 	end
-	MenuCallbackHandler.callback_lasersplus_menu_lasers_own_focused = function(self,focused)
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_team_focused = function(self,focused)
+		LasersPlus:SetMenuPreviewVisible("laser","team",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_team_back = function(self)
-	end
-	MenuCallbackHandler.callback_lasersplus_menu_lasers_team_focused = function(self,focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_peercolors_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_peercolors_focused = function(self,focused)
+		LasersPlus:SetMenuPreviewVisible("laser","peer1",focused)
+		LasersPlus:SetMenuPreviewVisible("laser","peer2",focused)
+		LasersPlus:SetMenuPreviewVisible("laser","peer3",focused)
+		LasersPlus:SetMenuPreviewVisible("laser","peer4",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_world_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_world_focused = function(self,focused)
+		LasersPlus:SetMenuPreviewVisible("laser","world",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_swatturret_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_swatturret_focused = function(self,focused)
+		LasersPlus:SetMenuPreviewVisible("laser","swatturret_att",focused)
+		LasersPlus:SetMenuPreviewVisible("laser","swatturret_rld",focused)
+		LasersPlus:SetMenuPreviewVisible("laser","swatturret_mad",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_sentrygun_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_sentrygun_focused = function(self,focused)
+		LasersPlus:SetMenuPreviewVisible("laser","sentrygun_auto",focused)
+		LasersPlus:SetMenuPreviewVisible("laser","sentrygun_ap",focused)
+		LasersPlus:SetMenuPreviewVisible("laser","sentrygun_off",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_vr_focused = function(self,focused)
+--		LasersPlus:SetMenuPreviewVisible("laser","vr",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_vr_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_flashlights_focused = function(self,focused)
+		--
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_flashlights_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_flashlights_own_focused = function(self,focused)
+--		LasersPlus:SetMenuPreviewVisible("flashlight","own",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_flashlights_own_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_flashlights_team_focused = function(self,focused)
+--		LasersPlus:SetMenuPreviewVisible("flashlight","team",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_flashlights_team_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_flashlights_peercolors_focused = function(self,focused)
+--		LasersPlus:SetMenuPreviewVisible("flashlight","peer1",focused)
+--		LasersPlus:SetMenuPreviewVisible("flashlight","peer2",focused)
+--		LasersPlus:SetMenuPreviewVisible("flashlight","peer3",focused)
+--		LasersPlus:SetMenuPreviewVisible("flashlight","peer4",focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_flashlights_peercolors_back = function(self)
 	end
 	
+	MenuCallbackHandler.callback_lasersplus_menu_qol_reticle_texture = function(self,item)
+		LasersPlus.settings.sight_texture_index = item:value()
+		LasersPlus:CheckMenuPreviewReticleColor()
+		LasersPlus:Save()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_reticle_color = function(self,item)
+		LasersPlus.settings.sight_color_index = item:value()
+		LasersPlus:CheckMenuPreviewReticleColor()
+		LasersPlus:Save()
+	end
+	
+	
+	
+	
+	
 	MenuCallbackHandler.callback_lasersplus_lasers_own_color_mode = function(self,item)
 		local index = item:value()
 		LasersPlus.settings.own_laser_color_mode = index
+		LasersPlus:CheckGadgetsByType("laser","own")
 	end
 	
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_own_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("own_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("own_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","own"))
 	end
 	
 	MenuCallbackHandler.callback_lasersplus_lasers_own_alpha_mode = function(self,item)
 		local mode = item:value()
 		LasersPlus.settings.own_laser_alpha_mode = mode
-		--apply changes to preview
+		LasersPlus:CheckGadgetsByType("laser","own")
 	end
 	
 	MenuCallbackHandler.callback_lasersplus_lasers_own_alpha_value = function(self,item)
 		local alpha = item:value()
 		LasersPlus.settings.own_laser_alpha_value = alpha
-		--apply changes to preview
+		LasersPlus:CheckGadgetsByType("laser","own")
 	end
 	
 	MenuCallbackHandler.callback_lasersplus_lasers_own_thickness_mode = function(self,item)
 		local mode = item:value()
 		LasersPlus.settings.own_laser_thickness_mode = mode
+		--updated automatically in WeaponLaser:update()
 	end
 	
 	MenuCallbackHandler.callback_lasersplus_lasers_own_thickness_value = function(self,item)
 		local alpha = item:value()
 		LasersPlus.settings.own_laser_thickness_value = alpha
+		--updated automatically in WeaponLaser:update()
 	end
 	
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_team_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("team_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("team_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","team"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer1_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("peer1_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("peer1_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","peer1"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer2_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("peer2_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("peer2_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","peer2"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer3_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("peer3_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("peer3_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","peer3"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer4_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("peer4_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("peer4_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","peer4"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_cop_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("cop_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("cop_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","cop"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_world_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("world_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("world_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","world"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_att_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("swatturret_att_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("swatturret_att_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","swatturret_att"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_mad_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("swatturret_mad_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("swatturret_mad_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","swatturret_mad"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_rld_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("swatturret_rld_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("swatturret_rld_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","swatturret_rld"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_auto_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("sentrygun_auto_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("sentrygun_auto_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","sentrygun_auto"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_ap_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("sentrygun_ap_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("sentrygun_ap_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","sentrygun_ap"))
 	end
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_off_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("sentrygun_off_laser_color_string",preview_square)
+		LasersPlus:callback_open_colorpicker("sentrygun_off_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","sentrygun_off"))
 	end
 	
 	
 	MenuCallbackHandler.callback_lasersplus_general_toggle_networking = function(self,item)
-		self.settings.networking_enabled = item:value() == "on"
+		LasersPlus.settings.networking_enabled = item:value() == "on"
 		LasersPlus:Save()
 	end
 	
@@ -1314,57 +1575,129 @@ Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function
 	
 end)
 
-Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_LasersPlus", function(menu_manager, nodes)
-	
-	
-	--populate extra multiplechoice options here
-	
-	--[[
-	MenuHelper:AddToggle({
-		id = "lasersplus_menu_general_networking",
-		title = "menu_lasersplus_menu_general_networking_title",
-		desc = "menu_lasersplus_menu_general_networking_desc",
-		callback = "callback_lasersplus_general_toggle_networking",
-		value = AdvancedCrosshair.settings.networking_enabled,
-		menu_id = "lasersplus_menu_general",
-		priority = 1
-	})
-	--]]
-	
-end)
-
 do return end
 
 Hooks:Add("MenuManagerSetupCustomMenus", "LasersPlus_MenuManagerSetupCustomMenus", function(menu_manager, nodes)
 	MenuHelper:NewMenu("lasersplus_menu_main")
-	
-	
-	MenuHelper:NewMenu("lasersplus_menu_general")
-	
-	MenuHelper:NewMenu("lasersplus_menu_strobes")
+	if false then 
+		
+		
+		MenuHelper:NewMenu("lasersplus_menu_general")
+		
+		MenuHelper:NewMenu("lasersplus_menu_strobes")
 
-	MenuHelper:NewMenu("lasersplus_menu_qol")
+		MenuHelper:NewMenu("lasersplus_menu_qol")
+		
+		
+		MenuHelper:NewMenu("lasersplus_menu_lasers")
+		MenuHelper:NewMenu("lasersplus_menu_lasers_own")
+		MenuHelper:NewMenu("lasersplus_menu_lasers_team")
+		MenuHelper:NewMenu("lasersplus_menu_lasers_peercolors")
+		MenuHelper:NewMenu("lasersplus_menu_lasers_world")
+		MenuHelper:NewMenu("lasersplus_menu_lasers_swatturret")
+		MenuHelper:NewMenu("lasersplus_menu_lasers_sentrygun")
+		MenuHelper:NewMenu("lasersplus_menu_lasers_vr")
+		
+		MenuHelper:NewMenu("lasersplus_menu_flashlights")
+		MenuHelper:NewMenu("lasersplus_menu_flashlights_own")
+		MenuHelper:NewMenu("lasersplus_menu_flashlights_team")
+		MenuHelper:NewMenu("lasersplus_menu_flashlights_peercolors")
+	end
+end)
+
+Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
+	if false then 
+		
+		--qol and strobe in particular need menus generated by lua since they need menus that can be dynamically populated
+		--according to a potentially fluctuating table of items
+		local reticle_textures = {}
+		local reticle_colors = {}
+		for i,texture_switch_data in ipairs(tweak_data.gui.weapon_texture_switches.types.sight) do 
+			local name_id = texture_switch_data.name_id
+			local texture_path = texture_switch_data.texture_path
+	--		local dlc = texture_switch_data.dlc
+			reticle_textures[i] = name_id
+		end
+		for i,color_index_data in ipairs(tweak_data.gui.weapon_texture_switches.color_indexes) do 
+			local color_name = color_index_data.color
+	--		local dlc = color_index_data.dlc
+			reticle_colors[i] = color_name
+		end
+		
+		MenuHelper:AddMultipleChoice({
+			id = "lasersplus_menu_qol_reticle_texture",
+			title = "lasersplus_menu_qol_reticle_texture_title",
+			desc = "lasersplus_menu_qol_reticle_texture_desc",
+			callback = "callback_lasersplus_menu_qol_reticle_texture",
+			items = reticle_textures,
+			value = LasersPlus.settings.sight_texture_index,
+			menu_id = "lasersplus_menu_qol",
+			priority = nil
+		})
+		MenuHelper:AddMultipleChoice({
+			id = "lasersplus_menu_qol_reticle_color",
+			title = "lasersplus_menu_qol_reticle_color_title",
+			desc = "lasersplus_menu_qol_reticle_color_desc",
+			callback = "callback_lasersplus_menu_qol_reticle_color",
+			items = reticle_colors,
+			value = LasersPlus.settings.sight_color_index,
+			menu_id = "lasersplus_menu_qol",
+			priority = nil
+		})
+		--populate extra multiplechoice options here
+		
+		--[[
+		MenuHelper:AddToggle({
+			id = "lasersplus_menu_general_networking",
+			title = "menu_lasersplus_menu_general_networking_title",
+			desc = "menu_lasersplus_menu_general_networking_desc",
+			callback = "callback_lasersplus_general_toggle_networking",
+			value = AdvancedCrosshair.settings.networking_enabled,
+			menu_id = "lasersplus_menu_general",
+			priority = 1
+		})
+		--]]
+	end
 	
+end)
+
+Hooks:Add("MenuManagerBuildCustomMenus", "LasersPlus_MenuManagerBuildCustomMenus", function( menu_manager, nodes )
 	
-	MenuHelper:NewMenu("lasersplus_menu_lasers")
-	MenuHelper:NewMenu("lasersplus_menu_lasers_own")
-	MenuHelper:NewMenu("lasersplus_menu_lasers_team")
-	MenuHelper:NewMenu("lasersplus_menu_lasers_peercolors")
-	MenuHelper:NewMenu("lasersplus_menu_lasers_world")
-	MenuHelper:NewMenu("lasersplus_menu_lasers_swatturret")
-	MenuHelper:NewMenu("lasersplus_menu_lasers_sentrygun")
-	MenuHelper:NewMenu("lasersplus_menu_lasers_vr")
+	nodes.lasersplus_menu_main = MenuHelper:BuildMenu(
+		"lasersplus_menu_main",
+		{
+			area_bg = "none",
+			back_callback = "callback_lasersplus_menu_main_back",
+			focus_changed_callback = "callback_lasersplus_menu_main_focused"
+		}
+	)
+	MenuHelper:AddMenuItem(nodes.blt_options,"lasersplus_menu_main","lasersplus_menu_main_title","lasersplus_menu_main_desc")
 	
-	MenuHelper:NewMenu("lasersplus_menu_flashlights")
-	MenuHelper:NewMenu("lasersplus_menu_flashlights_own")
-	MenuHelper:NewMenu("lasersplus_menu_flashlights_team")
-	MenuHelper:NewMenu("lasersplus_menu_flashlights_peercolors")
+	--[[
+	nodes.lasersplus_menu_qol = MenuHelper:BuildMenu(
+		"lasersplus_menu_qol",
+		{
+			area_bg = "none",
+			back_callback = "callback_lasersplus_menu_qol_back",
+			focus_changed_callback = "callback_lasersplus_menu_qol_focused"
+		}
+	)
+	--]]
 end)
 
 
+do return end
+
 --[[
+LasersPlus:CreateMenuPreviews()
+
+logall(LasersPlus._menu_preview_objects.colors)
+
 	for k,v in pairs(LasersPlus.registered_gadgets.laser) do 
 		logall(v)
 		Log(" ")
 	end
+	
+	
+			Hooks:Call(LasersPlus.hook_ids.laser.own,Color.red,1)
 --]]

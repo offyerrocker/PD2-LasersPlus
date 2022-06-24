@@ -1,4 +1,7 @@
 Hooks:PostHook(MenuNodeGui,"_setup_item_rows","LasersPlus_MenuNodeGui_setup_item_rows",function(self,node,...)
+	
+	LasersPlus:CreateMenuPreviews()
+	
 	--check legacy save files
 	if SystemFS and SystemFS:exists( Application:nice_path( legacy_save_path, false )) then 
 		local legacy_save_path = LasersPlus._legacy_save_path
