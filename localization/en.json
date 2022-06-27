@@ -33,7 +33,7 @@
 	"lasersplus_menu_lasers_own_title" : "My Lasers",
 	"lasersplus_menu_lasers_own_color_mode_title" : "Display Mode",
 	"lasersplus_menu_lasers_own_color_mode_desc" : "How lasers are displayed",
-	"lasersplus_menu_lasers_own_color_string_title" : "Edit color...",
+	"lasersplus_menu_lasers_own_color_string_title" : "Edit single color...",
 	"lasersplus_menu_lasers_own_color_string_desc" : "Open the ColorPicker customization interface to edit the color.",
 	"lasersplus_menu_lasers_own_alpha_mode_title" : "Alpha Override",
 	"lasersplus_menu_lasers_own_alpha_mode_desc" : "Use a custom opacity value for your lasers.",

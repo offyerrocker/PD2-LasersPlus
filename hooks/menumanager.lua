@@ -9,6 +9,7 @@
 		-can be used for flashlights or lasers
 		-dynamically populate
 	- general settings
+		- master enable
 		-flashlight and laser syncing
 	-settings/menus
 		QOL settings
@@ -138,10 +139,91 @@ LasersPlus._menu_preview_objects = {
 	reticles = {}
 }
 
-LasersPlus.default_strobes = {
-	rainbow = {}
+LasersPlus.strobe_interpolation = {
+	LINEAR = 1,
+	QUAD = 2,
+	CUBIC = 3,
+	SINE = 4
 }
-LasersPlus.strobes = {} --populated with list of ids such as "rainbow" on load
+LasersPlus.default_strobes = {
+	rainbow4 = {
+		manual = true
+	},
+	rainbow3 = {
+--		manual = true
+		duration = 2, --4 seconds
+		manual = false,
+		interpolation = "linear", --linear, sine
+		colors = {
+			"ff0000", --red
+			"0000ff"
+		}
+	},
+	rainbow2 = {
+		duration = 2, --4 seconds
+		manual = false,
+		interpolation = "linear", --linear, sine
+		colors = {
+			"ff0000", --red
+			"ff0000", --red
+			"ff8000", --orange
+			"ffff00", --yellow
+			"80ff00", --apple green
+			"80ff00", --apple green
+			"00ff00", --green
+			"00ff80", --turquoise
+			"00ffff", --cyan
+			"0080ff", --sky blue
+			"0000ff", --blue
+			"0000ff", --blue
+			"8000ff", --purple
+			"ff00ff", --magenta
+			"ff0080" --fuchsia? naming colors is hard
+		}
+	},
+	rainbow = {
+		duration = 10, --4 seconds
+		manual = false,
+		interpolation = "linear", --linear, sine
+		colors = {
+			"ff0000", --red
+			"ff4400", --yellow
+			"00ff00", --green
+			"00ffff", --cyan
+			"0000ff", --blue
+			"8000ff" --purple
+		}
+	}
+}
+Hooks:Register("LasersPlus_LoadCustomStrobes")
+Hooks:Add("LasersPlus_LoadCustomStrobes","LasersPlus_LoadRainbowStrobeExample",function(strobes_table,processed_strobes_table)
+	local strobe_name = "rainbow4"
+	local duration = 5
+	local quality = 60
+	local total_frames = duration * quality
+	local colors = {}
+	local p1 = 0
+	local p2 = math.deg(math.pi * 2/3)
+	local p3 = math.deg(math.pi * 4/3)
+	local p4 = 2 --math.deg(math.pi)
+	for i=1,total_frames do 
+		local prog = 1 - (i / total_frames) * p4
+		
+		
+		local r = math.sin(135 * prog + 0) / 2 + 0.5
+        local g = math.sin(140 * prog + 60) / 2 + 0.5
+        local b = math.sin(145 * prog + 120) / 2 + 0.5
+		
+--		local r = (math.sin(prog + p1) + 1) / 2
+--		local g = (math.sin(prog + p2) + 1) / 2
+--		local b = (math.sin(prog + p3) + 1) / 2
+		colors[i] = Color(r,g,b)
+	end
+	
+	processed_strobes_table[strobe_name] = colors
+end)
+LasersPlus.strobe_ids = {} --populated with list of ids such as "rainbow" on load
+LasersPlus.strobes = {}
 LasersPlus.processed_strobes = {} --generated from strobes post-load
 
 LasersPlus.registered_gadgets = {
@@ -185,7 +267,7 @@ LasersPlus.default_settings = {
 	generic_flashlight_alpha_value = 0.9,
 	
 	own_laser_color_string = "ff9200", --global override for all own weapons
-	own_laser_color_mode = 2,
+	own_laser_color_mode = 4,
 		--1: vanilla
 		--2: static (own_laser_color_string)
 		--3: peer
@@ -214,6 +296,8 @@ LasersPlus.default_settings = {
 		--4: strobe
 		--5: invisible
 	team_laser_strobe_id = "rainbow",
+	team_laser_thickness_mode = 1,
+	team_laser_thickness_value = 0.25,
 	
 	team_laser_alpha_mode = 1,
 	team_laser_alpha_value = 0.7,
@@ -249,6 +333,8 @@ LasersPlus.default_settings = {
 	cop_laser_alpha_value = 0.9,
 --	cop_flashlight_color_string = "e6bfb8", --baked into the asset iirc, can't be changed through lua
 --	cop_flashlight_color_mode = 1,
+	cop_laser_thickness_mode = 1,
+	cop_laser_thickness_value = 0.25,
 	
 	
 	world_laser_color_mode = 1,
@@ -262,6 +348,8 @@ LasersPlus.default_settings = {
 		--1: vanilla
 		--2: custom
 	world_laser_alpha_value = 0.9,
+	world_laser_thickness_mode = 1,
+	world_laser_thickness_value = 0.25,
 	
 	
 	
@@ -283,6 +371,9 @@ LasersPlus.default_settings = {
 		--2: custom
 	swatturret_laser_alpha_value = 0.8,
 	
+	swatturret_laser_thickness_mode = 1,
+	swatturret_laser_thickness_value = 0.25,
+	
 	sentrygun_laser_color_mode = 1,
 		--1: vanilla
 		--2: static (solid color, dependent on sentrygun normal/ap ammo)
@@ -297,6 +388,9 @@ LasersPlus.default_settings = {
 	sentrygun_off_laser_strobe_id = "rainbow",
 	sentrygun_laser_alpha_mode = 1,
 	sentrygun_laser_alpha_value = 0.8,
+	
+	sentrygun_laser_thickness_mode = 1,
+	sentrygun_laser_thickness_value = 0.25,
 	
 	
 	networking_enabled = true,
@@ -544,6 +638,7 @@ function LasersPlus:GetGadgetColor(gadget_data)
 	end
 end
 
+--returns string or nil
 function LasersPlus:GetGadgetStrobe(gadget_data)	
 	local source = gadget_data.source
 	
@@ -705,6 +800,7 @@ function LasersPlus:RegisterGadget(gadget_type,unit,params)
 	local strobe_id = self:GetGadgetStrobe(gadget_data)
 	if strobe_id then 
 --		register updater
+		gadget_data.strobe_table = self.processed_strobes[strobe_id]
 	end
 	
 	
@@ -775,7 +871,74 @@ function LasersPlus:UnregisterGadgetListeners(gadget_data)
 	end
 end
 
--- ***** Strobes *****
+-- ***** Strobes (aka Color Shift) *****
+--[[
+LasersPlus.processed_strobes.rainbow = LasersPlus:ProcessStrobeTable({
+		duration = 4, --4 seconds
+		complex = false,
+		colors = {
+			"ff0000",
+--			"ffff00",
+			"00ff00",
+--			"00ffff",
+			"0000ff"
+--			"ff00ff"
+		}
+})
+--]]
+
+function LasersPlus:ProcessStrobeTable(tbl)
+	local manual = tbl.manual
+	if manual then 
+		--custom creation
+		return
+	end
+	local colors = tbl.colors
+	local num_colors = #colors
+	if num_colors < 2 then 
+		--must have 2 or more colors, or else what's the point of having it be a strobe
+		return
+	end
+	local interpolation = tbl.interpolation or "linear"
+	local duration = tbl.duration 
+	local quality = 60 --optimized for 60 fps
+	local output = {}
+	local pi = 180 --this implementation of math.sin uses degrees instead of radians
+
+	local color_1 = tbl.colors[1]
+	local color_2 = tbl.colors[2]
+	local total_frames = quality * duration
+--		local mod_num_colors = num_colors - 1
+	local mini_duration = total_frames / num_colors
+	for i=1,total_frames do 
+		local prog = i/total_frames
+		local color_index_1 = math.ceil(num_colors * prog)
+		local color_index_2 = 1 + math.floor((color_index_1 - 0) % num_colors)
+--			Log(color_index_1)
+--			Log(color_index_2)
+		local color_1 = Color(tbl.colors[color_index_1])
+		local color_2 = Color(tbl.colors[color_index_2])
+--			local color_2 = tbl.colors[1 + (color_index_1 + 1) % mod_num_colors)]
+		
+		local color_prog = (i - (mini_duration * (color_index_1 - 1))) / mini_duration
+		if interpolation == LasersPlus.strobe_interpolation.LINEAR then 
+			--all good in the neighborhood
+		elseif interpolation == LasersPlus.strobe_interpolation.SINE then 
+			color_prog = math.sin(color_prog * pi / 2)
+		elseif interpolation == LasersPlus.strobe_interpolation.QUAD then
+			color_prog = color_prog * color_prog
+		elseif interpolation == LasersPlus.strobe_interpolation.CUBIC then 
+			color_prog = color_prog * color_prog * color_prog
+		end
+		
+		local new_color = color_1 + ((color_2 - color_1) * color_prog)
+		--((i - (color_index_1 - 1)) / duration)
+		table.insert(output,#output + 1,new_color)
+	end
+	return output
+end
+
+--strobe networking not yet implemented
 function LasersPlus:StrobeTableToString(data)
 	if not data or type(data) ~= "table" or not data.colors then
 		self:log("Invalid table data!")
@@ -794,6 +957,7 @@ function LasersPlus:StrobeTableToString(data)
 	return output
 end
 	
+--strobe networking not yet implemented
 function LasersPlus:StringToStrobeTable(data)
 	local output = {
 		colors = {},
@@ -933,6 +1097,7 @@ function LasersPlus:callback_open_colorpicker(setting,done_cb,changed_cb)
 	end
 end
 
+
 --for all specified gadgets, performs custom checks on individual gadget data 
 --and apply colors/alpha appropriately
 function LasersPlus:CheckGadgetsByType(gadget_type,source)
@@ -942,11 +1107,21 @@ function LasersPlus:CheckGadgetsByType(gadget_type,source)
 end
 
 function LasersPlus:CheckGadget(gadget_data)
-	if not gadget_data.strobe_id then 
-		local color,alpha,is_fallback = self:GetGadgetColor(gadget_data)
+	local strobe_id = self:GetGadgetStrobe(gadget_data)
+	local color,alpha,is_fallback = self:GetGadgetColor(gadget_data)
+	gadget_data.alpha = alpha
+	gadget_data.color = color
+	if not strobe_id then 
 		if not is_fallback then 
 			gadget_data.set_color_func(color,alpha)
 		end
+		gadget_data.strobe_id = nil
+		gadget_data.strobe_table = nil
+		gadget_data.strobe_index = nil
+	else
+		gadget_data.strobe_id = strobe_id
+		gadget_data.strobe_index = gadget_data.strobe_index or 1
+		gadget_data.strobe_table = self.processed_strobes[gadget_data.strobe_id]
 	end
 end
 
@@ -1384,6 +1559,19 @@ end)
 
 Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(menu_manager)
 	LasersPlus:Load()
+	LasersPlus.strobes = table.deep_map_copy(LasersPlus.default_strobes) --initialize with default strobes
+	Hooks:Call("LasersPlus_LoadCustomStrobes",LasersPlus.strobes,LasersPlus.processed_strobes) --add custom strobes
+	for strobe_id,strobe_table in pairs(LasersPlus.strobes) do 
+		table.insert(LasersPlus.strobe_ids,strobe_id) --generate list of strobe ids for menu selection purposes
+	end
+	table.sort(LasersPlus.strobe_ids,function(a,b)
+		return a < b
+	end)
+	
+	for strobe_id,strobe_table in pairs(LasersPlus.strobes) do
+		LasersPlus.processed_strobes[strobe_id] = LasersPlus.processed_strobes[strobe_id] or LasersPlus:ProcessStrobeTable(strobe_table)
+	end
+	
 	LasersPlus:CreateColorPicker()
 	
 			
@@ -1687,17 +1875,3 @@ end)
 
 
 do return end
-
---[[
-LasersPlus:CreateMenuPreviews()
-
-logall(LasersPlus._menu_preview_objects.colors)
-
-	for k,v in pairs(LasersPlus.registered_gadgets.laser) do 
-		logall(v)
-		Log(" ")
-	end
-	
-	
-			Hooks:Call(LasersPlus.hook_ids.laser.own,Color.red,1)
---]]

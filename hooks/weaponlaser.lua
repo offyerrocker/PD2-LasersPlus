@@ -22,7 +22,39 @@ function WeaponLaser:update(unit,t,dt,...)
 		if LasersPlus.settings.team_laser_thickness_mode == 2 then
 			beam_thickness = LasersPlus.settings.team_laser_thickness_value or beam_thickness
 		end
+	elseif gadget_data.source == "sentrygun" then 
+		if LasersPlus.settings.sentrygun_laser_thickness_mode == 2 then
+			beam_thickness = LasersPlus.settings.sentrygun_laser_thickness_value or beam_thickness
+		end
+	elseif gadget_data.source == "swatturret" then 
+		if LasersPlus.settings.swatturret_laser_thickness_mode == 2 then
+			beam_thickness = LasersPlus.settings.swatturret_laser_thickness_value or beam_thickness
+		end
 	end
+	
+	if gadget_data.strobe_table then
+		
+		local strobe_index = gadget_data.strobe_index or 1
+		strobe_index = strobe_index + 1 -- + dt
+		if strobe_index > #gadget_data.strobe_table then 
+			strobe_index = 1
+		end
+		gadget_data.strobe_index = strobe_index
+		local new_color = gadget_data.strobe_table[strobe_index] --math.floor this index if using time-based strobes
+		if new_color then 
+			
+			self._light:set_color(new_color)
+			
+			if gadget_data.alpha then 
+				new_color = new_color:with_alpha(gadget_data.alpha)
+			end
+--			Console:SetTrackerValue("trackera",tostring(strobe_index))
+--			Console:SetTrackerColor("trackera",new_color)
+			self._brush:set_color(new_color)
+		else
+--			LasersPlus:log("No color for index " .. tostring(strobe_index))
+		end
+	end 
 	
 	local rotation = self._custom_rotation or self._laser_obj:rotation()
 
