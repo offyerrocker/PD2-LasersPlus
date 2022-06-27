@@ -19,7 +19,7 @@
 	"lasersplus_color_mode_vanilla" : "Unchanged",
 	"lasersplus_color_mode_static" : "Single Color",
 	"lasersplus_color_mode_peer" : "Peer Color",
-	"lasersplus_color_mode_strobe" : "Color Shift",
+	"lasersplus_color_mode_strobe" : "Color-Shift",
 	"lasersplus_color_mode_invisible" : "Invisible",
 	
 	"lasersplus_alpha_mode_vanilla" : "Disabled",
@@ -43,8 +43,13 @@
 	"lasersplus_menu_lasers_own_thickness_mode_desc" : "Use a custom thickness value for your lasers.",
 	"lasersplus_menu_lasers_own_thickness_value_title" : "Thickness Value",
 	"lasersplus_menu_lasers_own_thickness_value_desc" : "Change the radius of your lasers.",
+	"lasersplus_menu_lasers_own_strobe_id_title" : "Color-Shift Preset",
+	"lasersplus_menu_lasers_own_strobe_id_desc" : "Change which preset to use",
 	
-	
+	"lasersplus_strobe_rainbow" : "Rainbow",
+	"lasersplus_strobe_siren" : "First Responder",
+	"lasersplus_strobe_cmy" : "Printer Ink",
+	"lasersplus_strobe_rgb" : "RGB",
 	
 	"lp_master_toggle_title" : "Enable the Lasers+ mod",
 	"lp_master_toggle_desc" : "Lets this mod change custom lasers' and flashlights' colors."

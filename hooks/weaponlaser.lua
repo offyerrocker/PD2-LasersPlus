@@ -13,22 +13,43 @@ function WeaponLaser:update(unit,t,dt,...)
 	end
 	
 	local beam_thickness = self._is_npc and 0.5 or 0.25
-	
+	local alpha
 	if gadget_data.source == "own" then 
+		--TODO grab these from gadget table
 		if LasersPlus.settings.own_laser_thickness_mode == 2 then
 			beam_thickness = LasersPlus.settings.own_laser_thickness_value or beam_thickness
+		end
+		if LasersPlus.setting.own_laser_alpha_mode == 2 then 
+			alpha = LasersPlus.settings.own_laser_alpha_value
+		else
+			alpha = gadget_data.natural_alpha
 		end
 	elseif gadget_data.source == "team" then 
 		if LasersPlus.settings.team_laser_thickness_mode == 2 then
 			beam_thickness = LasersPlus.settings.team_laser_thickness_value or beam_thickness
 		end
+		if LasersPlus.setting.team_laser_alpha_mode == 2 then 
+			alpha = LasersPlus.settings.team_laser_alpha_value
+		else
+			alpha = gadget_data.natural_alpha
+		end
 	elseif gadget_data.source == "sentrygun" then 
 		if LasersPlus.settings.sentrygun_laser_thickness_mode == 2 then
 			beam_thickness = LasersPlus.settings.sentrygun_laser_thickness_value or beam_thickness
 		end
+		if LasersPlus.setting.sentrygun_laser_alpha_mode == 2 then 
+			alpha = LasersPlus.settings.sentrygun_laser_alpha_value
+		else
+			alpha = gadget_data.natural_alpha
+		end
 	elseif gadget_data.source == "swatturret" then 
 		if LasersPlus.settings.swatturret_laser_thickness_mode == 2 then
 			beam_thickness = LasersPlus.settings.swatturret_laser_thickness_value or beam_thickness
+		end
+		if LasersPlus.setting.swatturret_laser_alpha_mode == 2 then 
+			alpha = LasersPlus.settings.swatturret_laser_alpha_value
+		else
+			alpha = gadget_data.natural_alpha
 		end
 	end
 	
@@ -45,13 +66,14 @@ function WeaponLaser:update(unit,t,dt,...)
 			
 			self._light:set_color(new_color)
 			
-			if gadget_data.alpha then 
-				new_color = new_color:with_alpha(gadget_data.alpha)
+			if alpha then 
+				new_color = new_color:with_alpha(alpha)
 			end
+			self._brush:set_color(new_color)
+			
 --			Console:SetTrackerValue("trackera",tostring(strobe_index))
 --			Console:SetTrackerColor("trackera",new_color)
-			self._brush:set_color(new_color)
-		else
+--		else
 --			LasersPlus:log("No color for index " .. tostring(strobe_index))
 		end
 	end 
