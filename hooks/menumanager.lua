@@ -127,6 +127,12 @@ LasersPlus.preview_square_placement = {
 			x = 750,
 			y = 95+26
 		}
+	},
+	reticle = {
+		--setting name is not needed
+		x = 700,
+		y = 32,
+		size = 64
 	}
 }
 
@@ -1176,8 +1182,10 @@ function LasersPlus:CheckMenuPreviewReticleColor()
 		local reticle_switch = sight_switch_data[selected_reticle_texture] or sight_switch_data[1]
 		local color_index = color_index_data[selected_reticle_color] or color_index_data[1]
 		local color_name = color_index.color
-		local reticle_texture = string.gsub(reticle_switch.texture_path,suffix,"_" .. color_name .. suffix)
-		
+		local reticle_texture = reticle_switch.texture_path
+		if color_name ~= "red" then
+			reticle_texture = string.gsub(reticle_texture,suffix,"_" .. color_name .. suffix)
+		end
 		preview_reticle:set_image(reticle_texture)
 --		preview_reticle:set_size()
 	end
@@ -1219,69 +1227,52 @@ function LasersPlus:CreateMenuPreviews()
 		local size = LasersPlus.preview_square_size
 		
 		for gadget_type,v in pairs(LasersPlus.preview_square_placement) do 
-			self._menu_preview_objects.colors[gadget_type] = {}
-			for source,source_data in pairs(v) do 
-				local color_string = source_data.setting_name and self.settings[source_data.setting_name] or LasersPlus.default_settings.generic_laser_color_string
-				local preview_square = panel:rect({
-					name = source,
-					x = source_data.x,
-					y = source_data.y,
-					w = size,
-					h = size,
-					visible = false,
-					color = Color(color_string),
-					blend_mode = "add",
-					layer = 1
-				})
-				self._menu_preview_objects.colors[gadget_type][source] = preview_square
-			end
-		end
-		
-		local selected_reticle_texture = self:GetSightTextureIndex()
-		local selected_reticle_color = self:GetSightColorIndex()
-		
-		local weapon_texture_switches = tweak_data.gui.weapon_texture_switches
-		local sight_switch_data = weapon_texture_switches.types.sight
-		local suffix = sight_switch_data.suffix
-		local color_index_data = weapon_texture_switches.color_indexes
-		
-		local reticle_switch = sight_switch_data[selected_reticle_texture] or sight_switch_data[1]
-		local color_index = color_index_data[selected_reticle_color] or color_index_data[1]
-		local color_name = color_index.color
-		local reticle_texture = string.gsub(reticle_switch.texture_path,suffix,"_" .. color_name .. suffix)
-		
-		local preview_reticle = panel:bitmap({
-			name = "preview_reticle",
-			texture = reticle_texture,
-			visible = false,
-			x = 700,
-			y = 100,
-			w = size,
-			h = size,
-			layer = 1
-		})
-		self._menu_preview_objects.reticles[1] = preview_reticle
-		--[[
-		for texture_index,texture_switch_data in ipairs(sight_switch_data) do 
-			local name_id = texture_switch_data.name_id
-			local base_texture_path = texture_switch_data.texture_path
-			local dlc = texture_switch_data.dlc
-			
-			for color_index,color_index_data in ipairs(weapon_texture_switches.color_indexes) do 
-				local color_name = color_index_data.color
-				local concatenated_texture_path = string.gsub(base_texture_path,suffix,"_" .. color_name .. suffix)
+			if gadget_type == "reticle" then
 				
+				local selected_reticle_texture = self:GetSightTextureIndex()
+				local selected_reticle_color = self:GetSightColorIndex()
+				
+				local weapon_texture_switches = tweak_data.gui.weapon_texture_switches
+				local sight_switch_data = weapon_texture_switches.types.sight
+				local suffix = sight_switch_data.suffix
+				local color_index_data = weapon_texture_switches.color_indexes
+				
+				local reticle_switch = sight_switch_data[selected_reticle_texture] or sight_switch_data[1]
+				local color_index = color_index_data[selected_reticle_color] or color_index_data[1]
+				local color_name = color_index.color
+				local reticle_texture = string.gsub(reticle_switch.texture_path,suffix,"_" .. color_name .. suffix)
+				local reticle_preview_placement = LasersPlus.preview_square_placement.reticle
 				local preview_reticle = panel:bitmap({
-					name = tostring(texture_index) .. "_" .. tostring(color_index),
-					texture = concatenated_texture_path,
-					w = size,
-					h = size,
+					name = "preview_reticle",
+					texture = reticle_texture,
+					visible = false,
+					x = reticle_preview_placement.x,
+					y = reticle_preview_placement.y,
+					w = reticle_preview_placement.size,
+					h = reticle_preview_placement.size,
+--					blend_mode = "add",
 					layer = 1
 				})
+				self._menu_preview_objects.reticles[1] = preview_reticle
+			else
+				self._menu_preview_objects.colors[gadget_type] = {}
+				for source,source_data in pairs(v) do 
+					local color_string = source_data.setting_name and self.settings[source_data.setting_name] or LasersPlus.default_settings.generic_laser_color_string
+					local preview_square = panel:rect({
+						name = source,
+						x = source_data.x,
+						y = source_data.y,
+						w = size,
+						h = size,
+						visible = false,
+						color = Color(color_string),
+						blend_mode = "add",
+						layer = 1
+					})
+					self._menu_preview_objects.colors[gadget_type][source] = preview_square
+				end
 			end
-			
 		end
-		--]]
 	end
 end
 
@@ -1576,7 +1567,7 @@ Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function
 	MenuCallbackHandler.callback_lasersplus_menu_general_back = function(self)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_qol_focused = function(self,focused)
-		LasersPlus:SetMenuPreviewVisible("reticle",nil,true)
+		LasersPlus:SetMenuPreviewVisible("reticle",nil,focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_qol_back = function(self)
 	end
@@ -2076,9 +2067,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		})
 	end
 	
-	
-	if false then 
-		
+	do 
 		--qol and strobe in particular need menus generated by lua since they need menus that can be dynamically populated
 		--according to a potentially fluctuating table of items
 		local reticle_textures = {}
@@ -2092,18 +2081,14 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		for i,color_index_data in ipairs(tweak_data.gui.weapon_texture_switches.color_indexes) do 
 			local color_name = color_index_data.color
 	--		local dlc = color_index_data.dlc
-			reticle_colors[i] = color_name
+			reticle_colors[i] = "menu_recticle_color_" .. tostring(color_name)
 		end
 		
-		MenuHelper:AddMultipleChoice({
-			id = "lasersplus_menu_qol_reticle_texture",
-			title = "lasersplus_menu_qol_reticle_texture_title",
-			desc = "lasersplus_menu_qol_reticle_texture_desc",
-			callback = "callback_lasersplus_menu_qol_reticle_texture",
-			items = reticle_textures,
-			value = LasersPlus.settings.sight_texture_index,
+		MenuHelper:AddDivider({
+			id = "lasersplus_menu_qol_div_1",
+			size = 16,
 			menu_id = "lasersplus_menu_qol",
-			priority = nil
+			priority = 1
 		})
 		MenuHelper:AddMultipleChoice({
 			id = "lasersplus_menu_qol_reticle_color",
@@ -2113,8 +2098,22 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 			items = reticle_colors,
 			value = LasersPlus.settings.sight_color_index,
 			menu_id = "lasersplus_menu_qol",
-			priority = nil
+			priority = 2
 		})
+		MenuHelper:AddMultipleChoice({
+			id = "lasersplus_menu_qol_reticle_texture",
+			title = "lasersplus_menu_qol_reticle_texture_title",
+			desc = "lasersplus_menu_qol_reticle_texture_desc",
+			callback = "callback_lasersplus_menu_qol_reticle_texture",
+			items = reticle_textures,
+			value = LasersPlus.settings.sight_texture_index,
+			menu_id = "lasersplus_menu_qol",
+			priority = 3
+		})
+	end
+	
+	
+	if false then 
 		--populate extra multiplechoice options here
 		
 		--[[

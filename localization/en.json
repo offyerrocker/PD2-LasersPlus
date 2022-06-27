@@ -1,5 +1,6 @@
 {
-	"lasersplus_title" : "LasersPlus Settings",
+	"lasersplus_menu_main_title" : "LasersPlus Options"
+	"lasersplus_menu_main_desc" : "Edit LasersPlus Mod Options"
 	
 	"menu_lasersplus_legacysave_title" : "Import legacy LasersPlus Save File?",
 	"menu_lasersplus_legacysave_desc" : "Saves from an incompatible version of LasersPlus (v2.86 or earlier) were detected!\nWould you like to import your LasersPlus settings?",
@@ -13,8 +14,10 @@
 	
 	"lasersplus_menu_general_title" : "General Settings",
 	"lasersplus_menu_qol_title" : "Quality of Life settings",
-	"lasersplus_menu_lasers_title" : "Laser Customization",
-	
+	"lasersplus_menu_qol_reticle_texture_title" : "Reticle Type",
+	"lasersplus_menu_qol_reticle_texture_desc" : "Change the default reticle to use when buying new weapons",
+	"lasersplus_menu_qol_reticle_color_title" : "Reticle Color",
+	"lasersplus_menu_qol_reticle_color_desc" : "Change the default reticle color",
 	
 	"lasersplus_color_mode_vanilla" : "Unchanged",
 	"lasersplus_color_mode_static" : "Single Color",
@@ -27,8 +30,7 @@
 	"lasersplus_thickness_mode_vanilla" : "Disabled",
 	"lasersplus_thickness_mode_custom" : "Enabled",
 	
-	"lasersplus_menu_main_title" : "LasersPlus Options"
-	"lasersplus_menu_main_desc" : "Edit LasersPlus Mod Options"
+	"lasersplus_menu_lasers_title" : "Laser Customization",
 	
 	"lasersplus_menu_lasers_own_title" : "My Lasers",
 	"lasersplus_menu_lasers_own_desc" : "Lasers on my weapons",
@@ -146,6 +148,17 @@
 	"lasersplus_strobe_hazy_flame" : "Hazy Flame",
 	"lasersplus_strobe_rgb" : "RGB",
 	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	"lasersplus_title" : "LasersPlus Settings",
+
 	"lp_master_toggle_title" : "Enable the Lasers+ mod",
 	"lp_master_toggle_desc" : "Lets this mod change custom lasers' and flashlights' colors."
 	"lp_laser_strobes_toggle_title" : "Enable Gadget Strobes",
