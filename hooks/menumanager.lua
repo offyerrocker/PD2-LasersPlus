@@ -1,9 +1,5 @@
 --[[
 	todo:
-	- on colorpicker closed, update existing lasers
-		--pass and call appropriate hook_id
-	
-	
 	-convert old save data
 	-strobes
 		-can be used for flashlights or lasers
@@ -63,73 +59,73 @@ LasersPlus.preview_square_placement = {
 	laser = {
 		own = {
 			setting_name = "own_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 69
 		},
 		team = {
 			setting_name = "team_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 70
 		},
 		peer1 = {
 			setting_name = "peer1_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 64
 		},
 		peer2 = {
 			setting_name = "peer2_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 96
 		},
 		peer3 = {
 			setting_name = "peer3_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 128
 		},
 		peer4 = {
 			setting_name = "peer4_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 156
 		},
 		cop = {
 			setting_name = "cop_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 69
 		},
 		world = {
 			setting_name = "world_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 69
 		},
 		swatturret_att = {
 			setting_name = "swatturret_att_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 95-26
 		},
 		swatturret_rld = {
-			setting_name = "swatturret_mad_laser_color_string",
-			x = 670,
-			y = 100
+			setting_name = "swatturret_rld_laser_color_string",
+			x = 750,
+			y = 95
 		},
 		swatturret_mad = {
-			setting_name = "swatturret_rld_laser_color_string",
-			x = 670,
-			y = 100
+			setting_name = "swatturret_mad_laser_color_string",
+			x = 750,
+			y = 95+26
 		},
 		sentrygun_auto = {
 			setting_name = "sentrygun_auto_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 95-26
 		},
 		sentrygun_ap = {
 			setting_name = "sentrygun_ap_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 95
 		},
 		sentrygun_off = {
 			setting_name = "sentrygun_off_laser_color_string",
-			x = 670,
-			y = 100
+			x = 750,
+			y = 95+26
 		}
 	}
 }
@@ -146,49 +142,11 @@ LasersPlus.strobe_interpolation = {
 	SINE = 4
 }
 LasersPlus.default_strobes = {
-	rainbow4 = {
-		name_id = "lasersplus_strobe_rgb",
-		manual = true
-	},
-	rainbow3 = {
---		manual = true
-		name_id = "lasersplus_strobe_cmy",
-		duration = 2, --4 seconds
-		manual = false,
-		interpolation = "linear", --linear, sine
-		colors = {
-			"ff0000", --red
-			"0000ff"
-		}
-	},
-	rainbow2 = {
-		name_id = "lasersplus_strobe_siren",
-		duration = 2, --4 seconds
-		manual = false,
-		interpolation = "linear", --linear, sine
-		colors = {
-			"ff0000", --red
-			"ff0000", --red
-			"ff8000", --orange
-			"ffff00", --yellow
-			"80ff00", --apple green
-			"80ff00", --apple green
-			"00ff00", --green
-			"00ff80", --turquoise
-			"00ffff", --cyan
-			"0080ff", --sky blue
-			"0000ff", --blue
-			"0000ff", --blue
-			"8000ff", --purple
-			"ff00ff", --magenta
-			"ff0080" --fuchsia? naming colors is hard
-		}
-	},
 	rainbow = {
 		name_id = "lasersplus_strobe_rainbow",
-		duration = 10, --4 seconds
+		duration = 10,
 		manual = false,
-		interpolation = "linear", --linear, sine
+		interpolation = "linear",
 		colors = {
 			"ff0000", --red
 			"ff4400", --yellow (really more orange but the yellow shows up easily in interpolation due to the blend mode)
@@ -197,11 +155,44 @@ LasersPlus.default_strobes = {
 			"0000ff", --blue
 			"8000ff" --purple
 		}
+	},
+	cmy = {
+		name_id = "lasersplus_strobe_cmy",
+		duration = 2,
+		manual = false,
+		interpolation = "linear",
+		colors = {
+			"ffff00",
+			"00ffff",
+			"ff00ff"
+		}
+	},
+	siren = {
+		name_id = "lasersplus_strobe_siren",
+		duration = 2,
+		manual = false,
+		interpolation = "cubic",
+		colors = {
+			"ff0000",
+			"ffffff",
+			"0000ff",
+			"ffffff",
+		}
+	},
+	hazy_flame = {
+		name_id = "lasersplus_strobe_hazy_flame",
+		duration = 1,
+		manual = false,
+		interpolation = "quad",
+		colors = {
+			"ff0000",
+			"fb401a"
+		}
 	}
 }
 Hooks:Register("LasersPlus_LoadCustomStrobes")
 Hooks:Add("LasersPlus_LoadCustomStrobes","LasersPlus_LoadRainbowStrobeExample",function(strobes_table,processed_strobes_table)
-	local strobe_name = "rainbow4"
+	local strobe_name = "cmy"
 	local duration = 5
 	local quality = 60
 	local total_frames = duration * quality
@@ -218,15 +209,12 @@ Hooks:Add("LasersPlus_LoadCustomStrobes","LasersPlus_LoadRainbowStrobeExample",f
         local g = math.sin(140 * prog + 60) / 2 + 0.5
         local b = math.sin(145 * prog + 120) / 2 + 0.5
 		
---		local r = (math.sin(prog + p1) + 1) / 2
---		local g = (math.sin(prog + p2) + 1) / 2
---		local b = (math.sin(prog + p3) + 1) / 2
 		colors[i] = Color(r,g,b)
 	end
 	
 	processed_strobes_table[strobe_name] = colors
 end)
-LasersPlus.strobe_ids = {} --populated with list of ids such as "rainbow" on load
+LasersPlus.strobe_ids = {} --used for multiplechoice menu generation
 LasersPlus.strobes = {}
 LasersPlus.processed_strobes = {} --generated from strobes post-load
 
@@ -283,8 +271,6 @@ LasersPlus.default_settings = {
 	own_laser_thickness_mode = 1, --1 = vanilla, 2 = custom
 	own_laser_thickness_value = 0.5,
 	
-	own_laser_glow_alpha_value = 1,
-		--glow effect for player lasers
 	own_laser_strobe_id = "rainbow",
 	
 	own_flashlight_color_string = "dfe8f4", -- blue tint
@@ -292,7 +278,7 @@ LasersPlus.default_settings = {
 	own_flashlight_alpha_mode = 1,
 	own_flashlight_strobe_id = "rainbow",
 	
-	team_laser_color_string = "00ff00",
+	team_laser_color_string = "0044ff",
 	team_laser_color_mode = 1,
 		--1: vanilla
 		--2: static (team_laser_color_string)
@@ -324,13 +310,13 @@ LasersPlus.default_settings = {
 	
 	
 	--says "cop" but really it's for snipers specifically
-	cop_laser_color_mode = 1,
+	cop_laser_color_mode = 3,
 		--1: vanilla
 		--2: static (cop_laser_color_string)
 		--3: strobe
 		--4: invisible
 	cop_laser_color_string = "fb401a", -- red-orange
-	cop_laser_strobe_id = "rainbow",
+	cop_laser_strobe_id = "hazy_flame",
 	cop_laser_alpha_mode = 1,
 		--1: vanilla
 		--2: custom
@@ -1244,6 +1230,7 @@ function LasersPlus:CreateMenuPreviews()
 					h = size,
 					visible = false,
 					color = Color(color_string),
+					blend_mode = "add",
 					layer = 1
 				})
 				self._menu_preview_objects.colors[gadget_type][source] = preview_square
@@ -1617,6 +1604,11 @@ Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_world_back = function(self)
 	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_cop_back = function(self)
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_cop_focused = function(self,focused)
+		LasersPlus:SetMenuPreviewVisible("laser","cop",focused)
+	end
 	MenuCallbackHandler.callback_lasersplus_menu_lasers_world_focused = function(self,focused)
 		LasersPlus:SetMenuPreviewVisible("laser","world",focused)
 	end
@@ -1726,9 +1718,274 @@ Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function
 		end
 	end
 	
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_team_color_mode = function(self,item)
+		local index = item:value()
+		LasersPlus.settings.team_laser_color_mode = index
+		LasersPlus:CheckGadgetsByType("laser","team")
+	end
+	
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_team_laser_color = function(self)
 		LasersPlus:callback_open_colorpicker("team_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","team"))
 	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_team_alpha_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.team_laser_alpha_mode = mode
+		LasersPlus:CheckGadgetsByType("laser","team")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_team_alpha_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.team_laser_alpha_value = alpha
+		LasersPlus:CheckGadgetsByType("laser","team")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_team_thickness_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.team_laser_thickness_mode = mode
+		--updated automatically in WeaponLaser:update()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_team_thickness_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.team_laser_thickness_value = alpha
+		--updated automatically in WeaponLaser:update()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_team_strobe_id = function(self,item)
+		local selected_index = item:value()
+		local strobe_ids = LasersPlus.strobe_ids
+		local selected_strobe_data = strobe_ids[selected_index]
+		local selected_strobe_id = selected_strobe_data and selected_strobe_data.strobe_id
+		if selected_strobe_data then
+			LasersPlus.settings.team_laser_strobe_id = selected_strobe_id
+			LasersPlus:CheckGadgetsByType("laser","team")
+			LasersPlus:Save()
+		else
+			LasersPlus:log("Error: MenuCallbackHandler.callback_lasersplus_menu_lasers_team_strobe_id(): bad index [" .. tostring(selected_index) .. "]")
+		end
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_cop_color_mode = function(self,item)
+		local index = item:value()
+		LasersPlus.settings.cop_laser_color_mode = index
+		LasersPlus:CheckGadgetsByType("laser","cop")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_cop_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("cop_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","cop"))
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_cop_alpha_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.cop_laser_alpha_mode = mode
+		LasersPlus:CheckGadgetsByType("laser","cop")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_cop_alpha_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.cop_laser_alpha_value = alpha
+		LasersPlus:CheckGadgetsByType("laser","cop")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_cop_thickness_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.cop_laser_thickness_mode = mode
+		--updated automatically in WeaponLaser:update()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_cop_thickness_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.cop_laser_thickness_value = alpha
+		--updated automatically in WeaponLaser:update()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_cop_strobe_id = function(self,item)
+		local selected_index = item:value()
+		local strobe_ids = LasersPlus.strobe_ids
+		local selected_strobe_data = strobe_ids[selected_index]
+		local selected_strobe_id = selected_strobe_data and selected_strobe_data.strobe_id
+		if selected_strobe_data then
+			LasersPlus.settings.cop_laser_strobe_id = selected_strobe_id
+			LasersPlus:CheckGadgetsByType("laser","cop")
+			LasersPlus:Save()
+		else
+			LasersPlus:log("Error: MenuCallbackHandler.callback_lasersplus_menu_lasers_cop_strobe_id(): bad index [" .. tostring(selected_index) .. "]")
+		end
+	end
+	
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_world_color_mode = function(self,item)
+		local index = item:value()
+		LasersPlus.settings.world_laser_color_mode = index
+		LasersPlus:CheckGadgetsByType("laser","world")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_world_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("world_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","world"))
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_world_alpha_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.world_laser_alpha_mode = mode
+		LasersPlus:CheckGadgetsByType("laser","world")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_world_alpha_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.world_laser_alpha_value = alpha
+		LasersPlus:CheckGadgetsByType("laser","world")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_world_thickness_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.world_laser_thickness_mode = mode
+		--updated automatically in WeaponLaser:update()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_world_thickness_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.world_laser_thickness_value = alpha
+		--updated automatically in WeaponLaser:update()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_world_strobe_id = function(self,item)
+		local selected_index = item:value()
+		local strobe_ids = LasersPlus.strobe_ids
+		local selected_strobe_data = strobe_ids[selected_index]
+		local selected_strobe_id = selected_strobe_data and selected_strobe_data.strobe_id
+		if selected_strobe_data then
+			LasersPlus.settings.world_laser_strobe_id = selected_strobe_id
+			LasersPlus:CheckGadgetsByType("laser","world")
+			LasersPlus:Save()
+		else
+			LasersPlus:log("Error: MenuCallbackHandler.callback_lasersplus_menu_lasers_world_strobe_id(): bad index [" .. tostring(selected_index) .. "]")
+		end
+	end
+	
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_sentrygun_color_mode = function(self,item)
+		local index = item:value()
+		LasersPlus.settings.sentrygun_laser_color_mode = index
+		LasersPlus:CheckGadgetsByType("laser","sentrygun")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_auto_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("sentrygun_auto_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","sentrygun_auto"))
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_ap_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("sentrygun_ap_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","sentrygun_ap"))
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_off_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("sentrygun_off_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","sentrygun_off"))
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_sentrygun_strobe_id = function(self,item)
+		local selected_index = item:value()
+		local strobe_ids = LasersPlus.strobe_ids
+		local selected_strobe_data = strobe_ids[selected_index]
+		local selected_strobe_id = selected_strobe_data and selected_strobe_data.strobe_id
+		if selected_strobe_data then
+			LasersPlus.settings.sentrygun_laser_strobe_id = selected_strobe_id
+			LasersPlus:CheckGadgetsByType("laser","sentrygun")
+			LasersPlus:Save()
+		else
+			LasersPlus:log("Error: MenuCallbackHandler.callback_lasersplus_menu_lasers_sentrygun_strobe_id(): bad index [" .. tostring(selected_index) .. "]")
+		end
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_sentrygun_alpha_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.sentrygun_laser_alpha_mode = mode
+		LasersPlus:CheckGadgetsByType("laser","sentrygun")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_sentrygun_alpha_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.sentrygun_laser_alpha_value = alpha
+		LasersPlus:CheckGadgetsByType("laser","sentrygun")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_sentrygun_thickness_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.sentrygun_laser_thickness_mode = mode
+		--updated automatically in WeaponLaser:update()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_sentrygun_thickness_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.sentrygun_laser_thickness_value = alpha
+		--updated automatically in WeaponLaser:update()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_sentrygun_strobe_id = function(self,item)
+		local selected_index = item:value()
+		local strobe_ids = LasersPlus.strobe_ids
+		local selected_strobe_data = strobe_ids[selected_index]
+		local selected_strobe_id = selected_strobe_data and selected_strobe_data.strobe_id
+		if selected_strobe_data then
+			LasersPlus.settings.sentrygun_laser_strobe_id = selected_strobe_id
+			LasersPlus:CheckGadgetsByType("laser","sentrygun")
+			LasersPlus:Save()
+		else
+			LasersPlus:log("Error: MenuCallbackHandler.callback_lasersplus_menu_lasers_sentrygun_strobe_id(): bad index [" .. tostring(selected_index) .. "]")
+		end
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_swatturret_color_mode = function(self,item)
+		local index = item:value()
+		LasersPlus.settings.swatturret_laser_color_mode = index
+		LasersPlus:CheckGadgetsByType("laser","swatturret")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_att_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("swatturret_att_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","swatturret_att"))
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_mad_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("swatturret_mad_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","swatturret_mad"))
+	end
+	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_rld_laser_color = function(self)
+		LasersPlus:callback_open_colorpicker("swatturret_rld_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","swatturret_rld"))
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_swatturret_alpha_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.swatturret_laser_alpha_mode = mode
+		LasersPlus:CheckGadgetsByType("laser","swatturret")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_swatturret_alpha_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.swatturret_laser_alpha_value = alpha
+		LasersPlus:CheckGadgetsByType("laser","swatturret")
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_swatturret_thickness_mode = function(self,item)
+		local mode = item:value()
+		LasersPlus.settings.swatturret_laser_thickness_mode = mode
+		--updated automatically in WeaponLaser:update()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_lasers_swatturret_thickness_value = function(self,item)
+		local alpha = item:value()
+		LasersPlus.settings.swatturret_laser_thickness_value = alpha
+		--updated automatically in WeaponLaser:update()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_lasers_swatturret_strobe_id = function(self,item)
+		local selected_index = item:value()
+		local strobe_ids = LasersPlus.strobe_ids
+		local selected_strobe_data = strobe_ids[selected_index]
+		local selected_strobe_id = selected_strobe_data and selected_strobe_data.strobe_id
+		if selected_strobe_data then
+			LasersPlus.settings.swatturret_laser_strobe_id = selected_strobe_id
+			LasersPlus:CheckGadgetsByType("laser","swatturret")
+			LasersPlus:Save()
+		else
+			LasersPlus:log("Error: MenuCallbackHandler.callback_lasersplus_menu_lasers_swatturret_strobe_id(): bad index [" .. tostring(selected_index) .. "]")
+		end
+	end
+	
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer1_laser_color = function(self)
 		LasersPlus:callback_open_colorpicker("peer1_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","peer1"))
 	end
@@ -1741,30 +1998,8 @@ Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function
 	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_peer4_laser_color = function(self)
 		LasersPlus:callback_open_colorpicker("peer4_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","peer4"))
 	end
-	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_cop_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("cop_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","cop"))
-	end
-	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_world_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("world_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","world"))
-	end
-	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_att_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("swatturret_att_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","swatturret_att"))
-	end
-	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_mad_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("swatturret_mad_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","swatturret_mad"))
-	end
-	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_swatturret_rld_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("swatturret_rld_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","swatturret_rld"))
-	end
-	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_auto_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("sentrygun_auto_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","sentrygun_auto"))
-	end
-	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_ap_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("sentrygun_ap_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","sentrygun_ap"))
-	end
-	MenuCallbackHandler.callback_lasersplus_colorpicker_edit_sentrygun_off_laser_color = function(self)
-		LasersPlus:callback_open_colorpicker("sentrygun_off_laser_color_string",LasersPlus:get_colorpicker_closed_callback("laser","sentrygun_off"))
-	end
+
+
 	
 	
 	MenuCallbackHandler.callback_lasersplus_general_toggle_networking = function(self,item)
@@ -1778,6 +2013,11 @@ Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function
 	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_qol.json", LasersPlus, LasersPlus.settings)
 	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_lasers.json", LasersPlus, LasersPlus.settings)
 	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_lasers_own.json", LasersPlus, LasersPlus.settings)
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_lasers_team.json", LasersPlus, LasersPlus.settings)
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_lasers_cop.json", LasersPlus, LasersPlus.settings)
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_lasers_world.json", LasersPlus, LasersPlus.settings)
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_lasers_sentrygun.json", LasersPlus, LasersPlus.settings)
+	MenuHelper:LoadFromJsonFile(LasersPlus._menu_path .. "menu_lasers_swatturret.json", LasersPlus, LasersPlus.settings)
 	
 end)
 

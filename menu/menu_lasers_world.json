@@ -1,0 +1,86 @@
+{
+	"menu_id" : "lasersplus_menu_lasers_world",
+	"parent_menu_id" : "lasersplus_menu_lasers",
+	"title" : "lasersplus_menu_lasers_world_title",
+	"back_callback" : "callback_lasersplus_menu_lasers_world_back",
+	"focus_changed_callback" : "callback_lasersplus_menu_lasers_world_focused",
+	"items" : [
+		{
+			"type" : "multiple_choice",
+			"id" : "lasersplus_menu_lasers_world_color_mode",
+			"title" : "lasersplus_menu_lasers_world_color_mode_title",
+			"description" : "lasersplus_menu_lasers_world_color_mode_desc",
+			"callback" : "callback_lasersplus_lasers_world_color_mode",
+			"items" : [
+				"lasersplus_color_mode_vanilla",
+				"lasersplus_color_mode_static",
+				"lasersplus_color_mode_strobe",
+				"lasersplus_color_mode_invisible"
+			],
+			"value" : "world_laser_color_mode"
+		},
+		{
+			"type" : "button",
+			"id" : "lasersplus_menu_lasers_world_color_string",
+			"title" : "lasersplus_menu_lasers_world_color_string_title",
+			"description" : "lasersplus_menu_lasers_world_color_string_desc",
+			"callback" : "callback_lasersplus_colorpicker_edit_world_laser_color"
+		},
+		{
+			"type" : "divider",
+			"size" : 8
+		},
+		{
+			"type" : "multiple_choice",
+			"id" : "lasersplus_menu_lasers_world_alpha_mode",
+			"title" : "lasersplus_menu_lasers_world_alpha_mode_title",
+			"description" : "lasersplus_menu_lasers_world_alpha_mode_desc",
+			"callback" : "callback_lasersplus_lasers_world_alpha_mode",
+			"items" : [
+				"lasersplus_alpha_mode_vanilla",
+				"lasersplus_alpha_mode_custom"
+			],
+			"value" : "world_laser_color_mode"
+		},
+		{
+			"type" : "slider",
+			"id" : "lasersplus_menu_lasers_world_alpha_value",
+			"title" : "lasersplus_menu_lasers_world_alpha_value_title",
+			"description" : "lasersplus_menu_lasers_world_alpha_value_desc",
+			"callback" : "callback_lasersplus_lasers_world_alpha_value",
+			"value" : "world_laser_alpha_value",
+			"default_value" : 0.7,
+			"min" : 0,
+			"max" : 1,
+			"step" : 0.1
+		},
+		{
+			"type" : "divider",
+			"size" : 16
+		},
+		{
+			"type" : "multiple_choice",
+			"id" : "lasersplus_menu_lasers_world_thickness_mode",
+			"title" : "lasersplus_menu_lasers_world_thickness_mode_title",
+			"description" : "lasersplus_menu_lasers_world_thickness_mode_desc",
+			"callback" : "callback_lasersplus_lasers_world_thickness_mode",
+			"items" : [
+				"lasersplus_thickness_mode_vanilla",
+				"lasersplus_thickness_mode_custom"
+			],
+			"value" : "world_laser_thickness_mode"
+		},
+		{
+			"type" : "slider",
+			"id" : "lasersplus_menu_lasers_world_thickness_value",
+			"title" : "lasersplus_menu_lasers_world_thickness_value_title",
+			"description" : "lasersplus_menu_lasers_world_thickness_value_desc",
+			"callback" : "callback_lasersplus_lasers_world_thickness_value",
+			"value" : "world_laser_thickness_value",
+			"default_value" : 0.5,
+			"min" : 0,
+			"max" : 2,
+			"step" : 0.1
+		}
+	]
+}

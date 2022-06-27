@@ -13,7 +13,10 @@ function WeaponLaser:update(unit,t,dt,...)
 	end
 	
 	local beam_thickness = self._is_npc and 0.5 or 0.25
-	local alpha
+	beam_thickness = gadget_data.beam_thickness or beam_thickness
+	
+	local alpha = gadget_data.alpha or gadget_data.natural_alpha
+	
 	if gadget_data.source == "own" then 
 		--TODO grab these from gadget table
 		if LasersPlus.settings.own_laser_thickness_mode == 2 then
