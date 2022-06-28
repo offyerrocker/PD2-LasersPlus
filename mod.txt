@@ -9,12 +9,20 @@
 	"image" : "icon.png",
 	"hooks" : [
 		{
+			"hook_id" : "lib/managers/menu/blackmarketgui",
+			"script_path" : "hooks/blackmarketgui.lua"
+		},
+		{
 			"hook_id" : "lib/managers/menumanager",
 			"script_path" : "hooks/menumanager.lua"
 		},
 		{
 			"hook_id" : "lib/managers/menu/menunodegui",
 			"script_path" : "hooks/menunodegui.lua"
+		},
+		{
+			"hook_id" : "lib/units/beings/player/huskplayerinventory",
+			"script_path" : "hooks/huskplayerinventory.lua"
 		},
 		{
 			"hook_id" : "lib/units/weapons/newraycastweaponbase",
@@ -53,10 +61,6 @@
 		{
 			"hook_id" : "lib/managers/blackmarketmanager",
 			"script_path" : "blackmarketmanager.lua"
-		},
-		{
-			"hook_id" : "lib/managers/menu/blackmarketgui",
-			"script_path" : "blackmarketgui.lua"
 		},
 		{
 			"hook_id" : "lib/network/handlers/unitnetworkhandler",

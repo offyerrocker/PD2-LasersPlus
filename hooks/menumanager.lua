@@ -1,6 +1,13 @@
 --[[
 	todo:
+	
+	- "apply immediately" for qol options
+	- compatibility with [Prettier Lasers] and [More Accurate Weapon Laser]
+	- compatibility with wolfhud/vanillahudplus, maybe
+	
 	-convert old save data
+		- old save data hook isn't activating consistently
+		
 	-strobes
 		-can be used for flashlights or lasers
 		-dynamically populate
@@ -131,7 +138,7 @@ LasersPlus.preview_square_placement = {
 	reticle = {
 		--setting name is not needed
 		x = 700,
-		y = 32,
+		y = 60,
 		size = 64
 	}
 }
@@ -394,12 +401,15 @@ LasersPlus.default_settings = {
 	redfilter_ratio = 0.66,
 	redfilter_enabled = true,
 	
-	sight_override_enabled = true,
+	default_blackmarket_laser_color_enabled = true,
+	default_blackmarket_flashlight_color_enabled = true,
+	
+	default_blackmarket_reticle_enabled = true,
 	sight_color_index = 2,
 	sight_texture_index = 1,
 	
-	multigadget_switch_enabled = true,
-	multigadget_nosightcycle_enabled = true, --if true, sight gadgets are excluded from the normal sight rotation
+	multigadget_cycle_enabled = true,
+	sightgadget_separatecycle_enabled = true, --if true, sight gadgets are excluded from the normal sight rotation
 	
 	
 	palettes = table.deep_map_copy(LasersPlus.default_palettes)
@@ -432,8 +442,15 @@ end
 
 -- ***** Settings *****
 
-function LasersPlus:IsQOLSightSwitchEnabled()
-	return self.settings.sight_override_enabled
+function LasersPlus:IsQOLDefaultLaserColorEnabled()
+	return self.settings.default_blackmarket_laser_color_enabled 
+end
+function LasersPlus:IsQOLDefaultFlashlightColorEnabled()
+	return self.settings.default_blackmarket_flashlight_color_enabled
+end
+
+function LasersPlus:IsQOLDefaultSightEnabled()
+	return self.settings.default_blackmarket_reticle_enabled
 end
 
 function LasersPlus:GetSightTextureIndex()
@@ -452,12 +469,12 @@ function LasersPlus:GetRedFilterRatio()
 	return self.settings.redfilter_ratio
 end
 
-function LasersPlus:IsQOLMultiGadgetSwitchEnabled()
-	return self.settings.multigadget_switch_enabled
+function LasersPlus:IsQOLSightGadgetSwitchEnabled()
+	return self.settings.sightgadget_switch_enabled
 end
 
-function LasersPlus:IsQOLMultiGadgetSightCycleEnabled()
-	return self.settings.multigadget_nosightcycle_enabled
+function LasersPlus:IsQOLMultiGadgetCycleEnabled()
+	return self.settings.multigadget_cycle_enabled
 end
 
 --this looks a bit ugly but it's efficient enough
@@ -496,7 +513,6 @@ function LasersPlus:GetLaserColor(gadget_data)
 			alpha = 0
 		end
 		
-		
 	elseif source == "team" or is_ai then 
 		local color_mode = self.settings.team_laser_color_mode
 		local alpha_mode = self.settings.team_laser_alpha_mode
@@ -509,6 +525,18 @@ function LasersPlus:GetLaserColor(gadget_data)
 		
 		if color_mode == 1 then --vanilla
 			color = gadget_data.natural_color or color
+			if self:IsQOLRedFilterEnabled() then 
+				local red_ratio = self:GetRedFilterRatio()
+				
+				local r = color.red
+				local g = color.green
+				local b = color.blue
+				if g+b < r * red_ratio then 
+					color = self.settings.team_laser_color_string and Color(self.settings.team_laser_color_string) or color
+				end
+			end
+			
+			
 		elseif color_mode == 2 then --custom solid color
 			color = self.settings.team_laser_color_string and Color(self.settings.team_laser_color_string) or color
 		elseif color_mode == 3 then --color by peer_id
@@ -736,7 +764,6 @@ function LasersPlus:SetGadgetParams(gadget_type,unit,params,check_color)
 		for k,v in pairs(params) do 
 			gadget_data[k] = v
 		end
-		
 		if check_color then
 			--if color or alpha is manually overwritten, don't re-calculate it (at least, not here)
 --			local setting_color,setting_alpha = self:GetGadgetColor(gadget_data)
@@ -865,6 +892,165 @@ function LasersPlus:UnregisterGadgetListeners(gadget_data)
 	if gadget_data then
 		Hooks:Remove(gadget_data.gadget_hook_id)
 	end
+end
+
+--for all specified gadgets, performs custom checks on individual gadget data 
+--and apply colors/alpha appropriately
+function LasersPlus:CheckGadgetsByType(gadget_type,source)
+	for uid,gadget_data in pairs(self.registered_gadgets[gadget_type]) do 
+		self:CheckGadget(gadget_data)
+	end
+end
+
+function LasersPlus:CheckGadget(gadget_data)
+	local strobe_id = self:GetGadgetStrobe(gadget_data)
+	local color,alpha,is_fallback = self:GetGadgetColor(gadget_data)
+	gadget_data.alpha = alpha
+	gadget_data.color = color
+	if not strobe_id then 
+		if not is_fallback then 
+			gadget_data.set_color_func(color,alpha)
+		end
+		gadget_data.strobe_id = nil
+		gadget_data.strobe_table = nil
+		gadget_data.strobe_index = nil
+	else
+		gadget_data.strobe_id = strobe_id
+		gadget_data.strobe_index = gadget_data.strobe_index or 1
+		gadget_data.strobe_table = self.processed_strobes[gadget_data.strobe_id]
+	end
+end
+
+-- ***** Quality of Life (aka QoL) *****
+
+function LasersPlus:callback_show_qol_gadgets_apply_prompt()
+	local num_applicable_weapons = 0
+	QuickMenu:new(managers.localization:text("menu_lasersplus_prompt_qol_gadgets_apply_title"),string.gsub(managers.localization:text("menu_lasersplus_prompt_qol_gadgets_apply_desc"),"$NUM",num_applicable_weapons),{
+		{
+			text = managers.localization:text("menu_lasersplus_ok"),
+			callback = callback(self,self,"ApplyDefaultGadgetColors",self:IsQOLDefaultLaserColorEnabled(),self:IsQOLDefaultFlashlightColorEnabled())
+		},
+		{
+			text = managers.localization:text("menu_lasersplus_cancel"),
+			is_cancel_button = true
+		}
+	},true)
+end
+
+function LasersPlus:callback_show_sightgadget_keybind_workaround_prompt()
+	QuickMenu:new(managers.localization:text("menu_lasersplus_prompt_keybind_workaround_long_title"),managers.localization:text("menu_lasersplus_prompt_keybind_workaround_long_desc"),{
+		{
+			text = managers.localization:text("menu_lasersplus_ok"),
+			is_cancel_button = true
+		}
+	},true)
+end
+
+function LasersPlus:ApplyDefaultGadgetColors(do_laser,do_flashlight)
+	
+	if not do_laser and not do_flashlight then 
+		--why are you here
+		--go home
+		return
+	end
+	
+	
+	for category,category_data in pairs(managers.blackmarket._global.crafted_items) do 
+		if category == "primary" or category == "secondary" then 
+			for slot,weapon_data in pairs(category_data) do
+			
+				local blueprint = weapon_data.blueprint
+				for _,part_id in pairs(blueprint) do 
+					local part_colors = managers.blackmarket:get_part_custom_colors(category,slot,part_id,false)
+					if part_colors then 
+						local laser_color = part_colors.laser
+						if do_laser and laser_color then 
+							part_colors.laser = Color(LasersPlus.settings.own_laser_color_string)
+--							LasersPlus:log("New override laser color: " .. tostring(ColorPicker.color_to_hex(part_colors.laser)),{color=part_colors.laser})
+						end
+						
+						local flashlight_color = part_colors.flashlight
+						if do_flashlight and flashlight_color then 
+							part_colors.flashlight = Color(LasersPlus.settings.own_flashlight_color_string)
+--							LasersPlus:log("New override flashlight color: " .. tostring(ColorPicker.color_to_hex(part_colors.flashlight)),{color=part_colors.flashlight})
+						end
+						managers.blackmarket:set_part_custom_colors(category,slot,part_id,part_colors)
+					else
+						LasersPlus:log("LasersPlus:ApplyDefaultGadgetColors(): No part by name " .. tostring(part_id))
+					end
+				end
+					
+			end
+		end
+	end
+	
+end
+
+function LasersPlus:callback_show_qol_reticle_apply_prompt()
+	local num_applicable_weapons = 0
+	QuickMenu:new(managers.localization:text("menu_lasersplus_prompt_qol_reticle_apply_title"),string.gsub(managers.localization:text("menu_lasersplus_prompt_qol_reticle_apply_desc"),"$NUM",num_applicable_weapons),{
+		{
+			text = managers.localization:text("menu_lasersplus_ok"),
+			callback = callback(self,self,"ApplyDefaultReticle")
+		},
+		{
+			text = managers.localization:text("menu_lasersplus_cancel"),
+			is_cancel_button = true
+		}
+	},true)
+end
+
+function LasersPlus:ApplyDefaultReticle(mode)
+	local do_color = false
+	local do_texture = false
+	if mode == "color" then 
+		do_color = true
+	elseif mode == "texture" then 
+		do_texture = true
+	else
+		do_color = true
+		do_texture = true
+	end
+	local sight_texture_index = self.settings.sight_texture_index
+	local sight_color_index = self.settings.sight_color_index
+
+	--[[
+		for k,v in pairs(managers.blackmarket._purchased_weapons) do 
+			if v.has_sight_with_reticle then 
+				if do_color then 
+					v.sight_color_index = sight_color_index
+				end
+				if do_texture then
+					v.sight_texture_index = sight_texture_index
+				end	
+			end
+		end
+	--]]
+	
+end
+
+function LasersPlus:CycleCurrentSightGadget()
+	--todo
+	do return end
+	local player = managers.player:local_player()
+	if alive(player) then
+		local inv_ext = player:inventory()
+		if inv_ext then 
+			local equipped_unit = inv_ext:equipped_unit()
+			if alive(equipped_unit) then 
+				local wpn_base = equipped_unit:base()
+				if wpn_base then 
+					local gadgets = wpn_base._gadgets or managers.weapon_factory:get_parts_from_weapon_by_type_or_perk("gadget", wpn_base._factory_id, wpn_base._blueprint)
+					local num_second_sight_gadgets = 0
+					if gadgets then 
+						
+--						log("Hello")
+					end
+				end
+			end
+		end
+	end
+	
 end
 
 -- ***** Strobes (aka Color Shift) *****
@@ -1090,34 +1276,6 @@ function LasersPlus:callback_open_colorpicker(setting,done_cb,changed_cb)
 	else
 		self:callback_show_colorpicker_prompt()
 		return
-	end
-end
-
-
---for all specified gadgets, performs custom checks on individual gadget data 
---and apply colors/alpha appropriately
-function LasersPlus:CheckGadgetsByType(gadget_type,source)
-	for uid,gadget_data in pairs(self.registered_gadgets[gadget_type]) do 
-		self:CheckGadget(gadget_data)
-	end
-end
-
-function LasersPlus:CheckGadget(gadget_data)
-	local strobe_id = self:GetGadgetStrobe(gadget_data)
-	local color,alpha,is_fallback = self:GetGadgetColor(gadget_data)
-	gadget_data.alpha = alpha
-	gadget_data.color = color
-	if not strobe_id then 
-		if not is_fallback then 
-			gadget_data.set_color_func(color,alpha)
-		end
-		gadget_data.strobe_id = nil
-		gadget_data.strobe_table = nil
-		gadget_data.strobe_index = nil
-	else
-		gadget_data.strobe_id = strobe_id
-		gadget_data.strobe_index = gadget_data.strobe_index or 1
-		gadget_data.strobe_table = self.processed_strobes[gadget_data.strobe_id]
 	end
 end
 
@@ -1556,6 +1714,9 @@ Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function
 	
 	LasersPlus:CreateColorPicker()
 	
+	MenuCallbackHandler.callback_lasersplus_dummy_disabled_menu_header_button = function(self)
+		
+	end
 			
 	MenuCallbackHandler.callback_lasersplus_menu_main_back = function(self)
 	end
@@ -1656,9 +1817,45 @@ Hooks:Add( "MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function
 		LasersPlus:CheckMenuPreviewReticleColor()
 		LasersPlus:Save()
 	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_reticle_apply_now = function(self)
+		LasersPlus:callback_show_qol_reticle_apply_prompt()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_redfilter_ratio = function(self,item)
+		LasersPlus.settings.redfilter_ratio = item:value()
+		LasersPlus:CheckGadgetsByType("laser","team")
+		LasersPlus:Save()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_gadgets_apply_now = function(self,item)
+		LasersPlus:callback_show_qol_reticle_apply_prompt()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_gadgets_flashlight_enabled = function(self,item)
+		LasersPlus.settings.default_blackmarket_flashlight_color_enabled = item:value() == "on"
+		LasersPlus:Save()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_gadgets_laser_enabled = function(self,item)
+		LasersPlus.settings.default_blackmarket_laser_color_enabled = item:value() == "on"
+		LasersPlus:Save()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_redfilter_enabled = function(self,item)
+		LasersPlus.settings.redfilter_enabled = item:value() == "on"
+		LasersPlus:CheckGadgetsByType("laser","team")
+		LasersPlus:Save()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_sightgadget_keybind = function()
+		LasersPlus:CycleCurrentSightGadget()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_sightgadget_separatecycle_enabled = function(self,item)
+		LasersPlus.settings.sightgadget_separatecycle_enabled = item:value() == "on"
+		LasersPlus:Save()
+	end
+	MenuCallbackHandler.callback_lasersplus_menu_qol_activatemultiplegadgets_enabled = function(self,item)
+		LasersPlus.settings.multigadget_cycle_enabled = item:value() == "on"
+		LasersPlus:Save()
+	end
 	
-	
-	
+	MenuCallbackHandler.callback_lasersplus_menu_qol_sightgadget_keybind_workaround = function(self)
+		LasersPlus:callback_show_sightgadget_keybind_workaround_prompt()
+	end
 	
 	
 	MenuCallbackHandler.callback_lasersplus_lasers_own_color_mode = function(self,item)
@@ -2042,29 +2239,31 @@ Hooks:Add("MenuManagerSetupCustomMenus", "LasersPlus_MenuManagerSetupCustomMenus
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCustomMenus", function(menu_manager, nodes)
+	do
 
-	local selected_strobe_id = LasersPlus.settings.own_laser_strobe_id
-	local selected_strobe_index = 1
-	local strobes_list = {}
-	for i,strobe_data in ipairs(LasersPlus.strobe_ids) do 
-		if strobe_data.strobe_id == selected_strobe_id then
-			selected_strobe_index = i
+		local selected_strobe_id = LasersPlus.settings.own_laser_strobe_id
+		local selected_strobe_index = 1
+		local strobes_list = {}
+		for i,strobe_data in ipairs(LasersPlus.strobe_ids) do 
+			if strobe_data.strobe_id == selected_strobe_id then
+				selected_strobe_index = i
+			end
+			strobes_list[i] = strobe_data.name_id or "missing"
 		end
-		strobes_list[i] = strobe_data.name_id or "missing"
-	end
-	if #strobes_list > 0 then 
-		--technically, using the provided hook, it's possible for another mod to remove all entries from the strobes list. 
-		--i'm not gonna be responsible if that happens.
-		MenuHelper:AddMultipleChoice({
-			id = "lasersplus_menu_lasers_own_strobe_id",
-			title = "lasersplus_menu_lasers_own_strobe_id_title",
-			desc = "lasersplus_menu_lasers_own_strobe_id_desc",
-			callback = "callback_lasersplus_menu_lasers_own_strobe_id",
-			items = strobes_list,
-			value = selected_strobe_index,
-			menu_id = "lasersplus_menu_lasers_own",
-			priority = nil
-		})
+		if #strobes_list > 0 then 
+			--technically, using the provided hook, it's possible for another mod to remove all entries from the strobes list. 
+			--i'm not gonna be responsible if that happens.
+			MenuHelper:AddMultipleChoice({
+				id = "lasersplus_menu_lasers_own_strobe_id",
+				title = "lasersplus_menu_lasers_own_strobe_id_title",
+				desc = "lasersplus_menu_lasers_own_strobe_id_desc",
+				callback = "callback_lasersplus_menu_lasers_own_strobe_id",
+				items = strobes_list,
+				value = selected_strobe_index,
+				menu_id = "lasersplus_menu_lasers_own",
+				priority = nil
+			})
+		end
 	end
 	
 	do 
@@ -2084,12 +2283,16 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 			reticle_colors[i] = "menu_recticle_color_" .. tostring(color_name)
 		end
 		
-		MenuHelper:AddDivider({
-			id = "lasersplus_menu_qol_div_1",
-			size = 16,
+		MenuHelper:AddButton({
+			id = "lasersplus_menu_qol_reticle_header_button",
+			title = "lasersplus_menu_qol_reticle_header_button_title",
+			desc = "lasersplus_menu_qol_reticle_header_button_desc",
+			callback = "callback_lasersplus_dummy_disabled_menu_header_button",
 			menu_id = "lasersplus_menu_qol",
-			priority = 1
+			disabled = true,
+			priority = 17
 		})
+		
 		MenuHelper:AddMultipleChoice({
 			id = "lasersplus_menu_qol_reticle_color",
 			title = "lasersplus_menu_qol_reticle_color_title",
@@ -2098,7 +2301,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 			items = reticle_colors,
 			value = LasersPlus.settings.sight_color_index,
 			menu_id = "lasersplus_menu_qol",
-			priority = 2
+			priority = 16
 		})
 		MenuHelper:AddMultipleChoice({
 			id = "lasersplus_menu_qol_reticle_texture",
@@ -2108,8 +2311,216 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 			items = reticle_textures,
 			value = LasersPlus.settings.sight_texture_index,
 			menu_id = "lasersplus_menu_qol",
+			priority = 15
+		})
+		
+		--these QoL options don't need to be populated dynamically
+		--but mixing json menus and manually populated menus results in inconsistent/uncontrolled menu item ordering
+
+		MenuHelper:AddButton({
+			id = "lasersplus_menu_qol_reticle_apply_now",
+			title = "lasersplus_menu_qol_reticle_apply_now_title",
+			desc = "lasersplus_menu_qol_reticle_apply_now_desc",
+			callback = "callback_lasersplus_menu_qol_reticle_apply_now",
+			menu_id = "lasersplus_menu_qol",
+			priority = 14
+		})
+		
+		
+		
+		
+
+
+		--[[
+		{
+			"type" : "button",
+			"id" : "lasersplus_menu_qol_reticle_apply_now",
+			"title" : "lasersplus_menu_qol_reticle_apply_now_title",
+			"description" : "lasersplus_menu_qol_reticle_apply_now_desc",
+			"callback" : "callback_lasersplus_menu_qol_reticle_apply_now"
+		},
+		{
+			"type" : "toggle",
+			"id" : "lasersplus_menu_qol_redfilter_enabled",
+			"title" : "lasersplus_menu_qol_redfilter_enabled_title",
+			"description" : "lasersplus_menu_qol_redfilter_enabled_desc",
+			"callback" : "callback_lasersplus_menu_qol_redfilter_enabled",
+			"value" : "redfilter_enabled"
+		},
+		{
+			"type" : "slider",
+			"id" : "lasersplus_menu_qol_redfilter_ratio",
+			"title" : "lasersplus_menu_qol_redfilter_ratio_title",
+			"description" : "lasersplus_menu_qol_redfilter_ratio_desc",
+			"callback" : "callback_lasersplus_menu_qol_redfilter_ratio",
+			"value" : "redfilter_ratio",
+			"default_value" : 0.66,
+			"min" : 0,
+			"max" : 1,
+			"step" : 0.1
+		},
+		{
+			"type" : "button",
+			"id" : "lasersplus_menu_qol_gadgets_apply_now",
+			"title" : "lasersplus_menu_qol_gadgets_apply_now_title",
+			"description" : "lasersplus_menu_qol_gadgets_apply_now_desc",
+			"callback" : "callback_lasersplus_menu_qol_gadgets_apply_now"
+		}
+		--]]
+	
+		MenuHelper:AddDivider({
+			id = "lasersplus_menu_qol_div_redfilter",
+			size = 16,
+			menu_id = "lasersplus_menu_qol",
+			priority = 13
+		})
+		MenuHelper:AddButton({
+			id = "lasersplus_menu_qol_redfilter_header_button",
+			title = "lasersplus_menu_qol_redfilter_header_button_title",
+			desc = "lasersplus_menu_qol_redfilter_header_button_desc",
+			callback = "callback_lasersplus_dummy_disabled_menu_header_button",
+			menu_id = "lasersplus_menu_qol",
+			disabled = true,
+			priority = 12
+		})
+		MenuHelper:AddToggle({
+			id = "lasersplus_menu_qol_redfilter_enabled",
+			title = "lasersplus_menu_qol_redfilter_enabled_title",
+			desc = "lasersplus_menu_qol_redfilter_enabled_desc",
+			callback = "callback_lasersplus_menu_qol_redfilter_enabled",
+			value = LasersPlus.settings.redfilter_enabled,
+			menu_id = "lasersplus_menu_qol",
+			priority = 11
+		})
+		MenuHelper:AddSlider({
+			id = "lasersplus_menu_qol_redfilter_ratio",
+			title = "lasersplus_menu_qol_redfilter_ratio_title",
+			desc = "lasersplus_menu_qol_redfilter_ratio_desc",
+			callback = "callback_lasersplus_menu_qol_redfilter_ratio",
+			value = LasersPlus.settings.redfilter_ratio,
+			default_value = LasersPlus.default_settings.redfilter_ratio,
+			min = 0,
+			max = 1,
+			step = 0.1,
+			show_value = true,
+			menu_id = "lasersplus_menu_qol",
+			priority = 10
+		})
+		MenuHelper:AddDivider({
+			id = "lasersplus_menu_qol_div_gadgets",
+			size = 16,
+			menu_id = "lasersplus_menu_qol",
+			priority = 9
+		})
+		MenuHelper:AddButton({
+			id = "lasersplus_menu_qol_gadgets_header_button",
+			title = "lasersplus_menu_qol_gadgets_header_button_title",
+			desc = "lasersplus_menu_qol_gadgets_header_button_desc",
+			callback = "callback_lasersplus_dummy_disabled_menu_header_button",
+			menu_id = "lasersplus_menu_qol",
+			disabled = true,
+			priority = 8
+		})
+		MenuHelper:AddToggle({
+			id = "lasersplus_menu_qol_gadgets_laser_enabled",
+			title = "lasersplus_menu_qol_gadgets_laser_enabled_title",
+			desc = "lasersplus_menu_qol_gadgets_laser_enabled_desc",
+			callback = "callback_lasersplus_menu_qol_gadgets_laser_enabled",
+			value = LasersPlus.settings.default_blackmarket_laser_color_enabled,
+			menu_id = "lasersplus_menu_qol",
+			priority = 7
+		})
+		MenuHelper:AddToggle({
+			id = "lasersplus_menu_qol_gadgets_flashlight_enabled",
+			title = "lasersplus_menu_qol_gadgets_flashlight_enabled_title",
+			desc = "lasersplus_menu_qol_gadgets_flashlight_enabled_desc",
+			callback = "callback_lasersplus_menu_qol_gadgets_flashlight_enabled",
+			value = LasersPlus.settings.default_blackmarket_flashlight_color_enabled,
+			menu_id = "lasersplus_menu_qol",
+			priority = 6
+		})
+		MenuHelper:AddButton({
+			id = "lasersplus_menu_qol_gadgets_apply_now",
+			title = "lasersplus_menu_qol_gadgets_apply_now_title",
+			desc = "lasersplus_menu_qol_gadgets_apply_now_desc",
+			callback = "callback_lasersplus_menu_qol_gadgets_apply_now",
+			menu_id = "lasersplus_menu_qol",
+			priority = 5
+		})
+		MenuHelper:AddDivider({
+			id = "lasersplus_menu_qol_div_sightgadget",
+			size = 16,
+			menu_id = "lasersplus_menu_qol",
+			priority = 4
+		})
+		MenuHelper:AddButton({
+			id = "lasersplus_menu_qol_sightgadget_header_button",
+			title = "lasersplus_menu_qol_sightgadget_header_button_title",
+			desc = "lasersplus_menu_qol_sightgadget_header_button_desc",
+			callback = "callback_lasersplus_dummy_disabled_menu_header_button",
+			menu_id = "lasersplus_menu_qol",
+			disabled = true,
 			priority = 3
 		})
+		MenuHelper:AddButton({
+			id = "lasersplus_menu_qol_sightgadget_keybind_workaround",
+			title = "lasersplus_menu_qol_sightgadget_keybind_workaround_title",
+			desc = "lasersplus_menu_qol_sightgadget_keybind_workaround_desc",
+			callback = "callback_lasersplus_menu_qol_sightgadget_keybind_workaround",
+			menu_id = "lasersplus_menu_qol",
+			priority = 2
+		})
+		MenuHelper:AddToggle({
+			id = "lasersplus_menu_qol_activatemultiplegadgets_enabled",
+			title = "lasersplus_menu_qol_activatemultiplegadgets_enabled_title",
+			desc = "lasersplus_menu_qol_activatemultiplegadgets_enabled_desc",
+			callback = "callback_lasersplus_menu_qol_activatemultiplegadgets_enabled",
+			value = LasersPlus.settings.default_blackmarket_flashlight_color_enabled,
+			menu_id = "lasersplus_menu_qol",
+			priority = 1
+		})
+		--[[
+		
+		
+		MenuHelper:AddKeybinding({
+			id = "lasersplus_menu_qol_sightgadget_keybind",
+			title = "lasersplus_menu_qol_sightgadget_keybind_title",
+			desc = "lasersplus_menu_qol_sightgadget_keybind_desc",
+--			connection_name = "connection_lasersplus_menu_qol_sightgadget_keybind",
+--			binding = "m", --default key
+--			button = "m",
+			disabled = true,
+			callback = "callback_lasersplus_menu_qol_sightgadget_keybind",
+			menu_id = "lasersplus_menu_qol",
+			priority = 1
+		})
+		
+		
+				{
+			"type" : "toggle",
+			"id" : "lasersplus_menu_qol_sightgadget_separatecycle_enabled",
+			"title" : "lasersplus_menu_qol_sightgadget_separatecycle_enabled_title",
+			"description" : "lasersplus_menu_qol_sightgadget_separatecycle_enabled_desc",
+			"callback" : "callback_lasersplus_menu_qol_sightgadget_separatecycle_enabled",
+			"value" : "sightgadget_separatecycle_enabled"
+		},
+		{
+			"type" : "keybind",
+			"id" : "lasersplus_menu_qol_sightgadget_keybind",
+			"title" : "lasersplus_menu_qol_sightgadget_keybind_title",
+			"description" : "lasersplus_menu_qol_sightgadget_keybind_desc",
+			"keybind_id" : "lasersplus_menu_qol_sightgadget_keybind_desc",
+			"run_in_game" : true,
+			"run_in_menu" : false,
+			"button" : "o",
+			"func" : "callback_lasersplus_menu_qol_sightgadget_keybind"
+		}
+--]]
+
+
+		
+		
+		
 	end
 	
 	

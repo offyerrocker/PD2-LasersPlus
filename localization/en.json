@@ -11,13 +11,60 @@
 	"menu_lasersplus_missing_colorpicker_title" : "Missing Dependency",
 	"menu_lasersplus_missing_colorpicker_desc" : "You need \"ColorPicker\" installed in order to use the ColorPicker editor!\nYou can find it here:\n$URL",
 	"menu_lasersplus_ok" : "OK",
+	"menu_lasersplus_yes" : "Yes",
+	"menu_lasersplus_no" : "No",
+	"menu_lasersplus_cancel" : "Cancel",
 	
 	"lasersplus_menu_general_title" : "General Settings",
 	"lasersplus_menu_qol_title" : "Quality of Life settings",
+	"lasersplus_menu_qol_gadgets_header_button_title" : "Default Gadget Color",
+	"lasersplus_menu_qol_gadgets_header_button_desc" : "Automatically selects the gadget color when you purchase a laser or flashlight attachment",
+	"lasersplus_menu_qol_gadgets_flashlight_enabled_title" : "Default Flashlight Color Enabled",
+	"lasersplus_menu_qol_gadgets_flashlight_enabled_desc" : "Changes newly-purchased flashlights to your Own Flashlight Color",
+	"lasersplus_menu_qol_gadgets_laser_enabled_title" : "Default Laser Color Enabled",
+	"lasersplus_menu_qol_gadgets_laser_enabled_desc" : "Changes newly-purchased lasers to your Own Laser Color",
+	"lasersplus_menu_qol_gadgets_apply_now_title" : "Apply to Existing Gadgets",
+	"lasersplus_menu_qol_gadgets_apply_now_desc" : "Change Gadget Colors in all purchased weapons",
+	
+	"lasersplus_menu_qol_reticle_header_button_title" : "Default Sight Reticle/Color",
+	"lasersplus_menu_qol_reticle_header_button_desc" : "Automatically selects the sight type and color when you purchase a weapon sight attachment",
+	
+	"lasersplus_menu_qol_sightgadget_header_button_title" : "Activate Multiple Gadgets/Separate Sight Gadget",
+	"lasersplus_menu_qol_sightgadget_header_button_desc" : "Allows toggling multiple gadgets, and adds a separate keybind for sight gadgets such as the 45 Degree Sights or Sight Magnifiers.",
+	"lasersplus_menu_qol_sightgadget_keybind_title" : "Toggle Sight Gadget",
+	"lasersplus_menu_qol_sightgadget_keybind_desc" : "Press this button to toggle your sight gadget.",
+	"lasersplus_menu_qol_sightgadget_keybind_workaround_title" : "Sight Gadget Keybind",
+	"lasersplus_menu_qol_sightgadget_keybind_workaround_desc" : "Please go to the BLT Keybinds menu to customize this keybind!",
+	"lasersplus_menu_qol_sightgadget_separatecycle_enabled_title" : "Disable normal cycle to gadgets",
+	"lasersplus_menu_qol_sightgadget_separatecycle_enabled_desc" : "If checked, prevents sight gadgets from being activated from the normal gadget keybind.",
+	"lasersplus_menu_qol_activatemultiplegadgets_enabled_title" : "Activate Multiple Gadgets Enabled",
+	"lasersplus_menu_qol_activatemultiplegadgets_enabled_desc" : "If checked, allows multiple gadgets to be activated using the normal gadget keybind.",
+	
 	"lasersplus_menu_qol_reticle_texture_title" : "Reticle Type",
-	"lasersplus_menu_qol_reticle_texture_desc" : "Change the default reticle to use when buying new weapons",
+	"lasersplus_menu_qol_reticle_texture_desc" : "Change the default reticle type",
 	"lasersplus_menu_qol_reticle_color_title" : "Reticle Color",
 	"lasersplus_menu_qol_reticle_color_desc" : "Change the default reticle color",
+	"lasersplus_menu_qol_reticle_apply_now_title" : "Apply to Existing Reticles",
+	"lasersplus_menu_qol_reticle_apply_now_desc" : "Change reticles in all purchased weapons",
+	
+	"lasersplus_menu_qol_redfilter_header_button_title" : "Red Laser Filter",
+	"lasersplus_menu_qol_redfilter_header_button_desc" : "Teammates' Lasers with too much red will be changed to your Teammate Laser Color.",
+	"lasersplus_menu_qol_redfilter_enabled_title" : "Enabled",
+	"lasersplus_menu_qol_redfilter_enabled_desc" : "Enable or disable the Red Laser Filter feature.",
+	"lasersplus_menu_qol_redfilter_ratio_title" : "Red Filter Ratio Threshold",
+	"lasersplus_menu_qol_redfilter_ratio_desc" : "Lasers with more than this percentage of red will be filtered.",
+	
+	
+	"menu_lasersplus_prompt_keybind_workaround_long_title" : "Separate Sight Gadget Keybind",
+	"menu_lasersplus_prompt_keybind_workaround_long_desc" : "Due to a bug with sBLT, keybinds must be customized in the \"BLT Keybinds\" menu.\nPlease navigate to the BLT Keybinds menu in order to set this keybind.",
+	"menu_lasersplus_prompt_qol_reticle_apply_title" : "Confirm Apply Reticle",
+	"menu_lasersplus_prompt_qol_reticle_apply_desc" : "You are about to change the reticle setting for $NUM weapons.",
+	"menu_lasersplus_prompt_qol_gadgets_apply_title" : "Confirm Apply Gadgets",
+	"menu_lasersplus_prompt_qol_gadgets_apply_desc" : "You are about to change the gadget setting for $NUM weapons.",
+	
+	
+	
+	
 	
 	"lasersplus_color_mode_vanilla" : "Unchanged",
 	"lasersplus_color_mode_static" : "Single Color",
