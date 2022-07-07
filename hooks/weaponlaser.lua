@@ -22,7 +22,7 @@ function WeaponLaser:update(unit,t,dt,...)
 		if LasersPlus.settings.own_laser_thickness_mode == 2 then
 			beam_thickness = LasersPlus.settings.own_laser_thickness_value or beam_thickness
 		end
-		if LasersPlus.setting.own_laser_alpha_mode == 2 then 
+		if LasersPlus.settings.own_laser_alpha_mode == 2 then 
 			alpha = LasersPlus.settings.own_laser_alpha_value
 		else
 			alpha = gadget_data.natural_alpha
@@ -31,7 +31,7 @@ function WeaponLaser:update(unit,t,dt,...)
 		if LasersPlus.settings.team_laser_thickness_mode == 2 then
 			beam_thickness = LasersPlus.settings.team_laser_thickness_value or beam_thickness
 		end
-		if LasersPlus.setting.team_laser_alpha_mode == 2 then 
+		if LasersPlus.settings.team_laser_alpha_mode == 2 then 
 			alpha = LasersPlus.settings.team_laser_alpha_value
 		else
 			alpha = gadget_data.natural_alpha
@@ -40,7 +40,7 @@ function WeaponLaser:update(unit,t,dt,...)
 		if LasersPlus.settings.sentrygun_laser_thickness_mode == 2 then
 			beam_thickness = LasersPlus.settings.sentrygun_laser_thickness_value or beam_thickness
 		end
-		if LasersPlus.setting.sentrygun_laser_alpha_mode == 2 then 
+		if LasersPlus.settings.sentrygun_laser_alpha_mode == 2 then 
 			alpha = LasersPlus.settings.sentrygun_laser_alpha_value
 		else
 			alpha = gadget_data.natural_alpha
@@ -49,7 +49,7 @@ function WeaponLaser:update(unit,t,dt,...)
 		if LasersPlus.settings.swatturret_laser_thickness_mode == 2 then
 			beam_thickness = LasersPlus.settings.swatturret_laser_thickness_value or beam_thickness
 		end
-		if LasersPlus.setting.swatturret_laser_alpha_mode == 2 then 
+		if LasersPlus.settings.swatturret_laser_alpha_mode == 2 then 
 			alpha = LasersPlus.settings.swatturret_laser_alpha_value
 		else
 			alpha = gadget_data.natural_alpha
