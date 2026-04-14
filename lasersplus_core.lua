@@ -1,14 +1,673 @@
 --unused
 
-LasersPlus = {}
-LasersPlus._mod_path = LasersPlus.GetPath and LasersPlus:GetPath() or ModPath
-LasersPlus._settings_save_path = SavePath .. "lp3_settings.json"
+LasersPlus = LasersPlus or {}
+LasersPlus._mod_path = LasersPlusCore.GetPath and LasersPlusCore:GetPath() or ModPath
+LasersPlus._default_localization_path = LasersPlus._mod_path .. "localization/english.json"
+
+LasersPlus.LASERSPLUS_SAVEFILE_VERSION = "v3"
+LasersPlus._save_directory = LasersPlus._save_directory or SavePath
+LasersPlus._legacy_settings_path = LasersPlus._save_directory .. "lp3_settings.json"
+LasersPlus._converted_legacy_settings_path = LasersPlus._save_directory .. "OLD_lp3_settings.json"
+LasersPlus._settings_path = LasersPlus._save_directory .. "lasersplus_settings.json"
+LasersPlus.STROBE_NETWORKING_STRING_TEMPLATE = "$DURATION:$COLORS"
+
+LasersPlus.NETWORK_EVENT_IDS = {
+	LASERSPLUS_SYNC_GADGET_ALL	 = "LasersPlus_sync_gadgets",
+	LASERSPLUS_SYNC_GADGET_LASER = "LasersPlus_sync_laser",
+	LASERSPLUS_SYNC_GADGET_FLASH = "LasersPlus_sync_flash"
+}
+
+LasersPlus.default_settings = {
+	version = "v3",
+	
+--the remaining following settings control laser and flashlight appearances
+--display modes are standardized to the following:
+--* 1: vanilla. this laser or flashlight is not changed from whatever color it would be normally.
+--* 2: custom. this laser or flashlight will use the specific color or strobe of your choice.
+--* 3: (only for player/teammate lasers/flashlights) the laser or flashlight is colored according to which player color they are-
+--	eg. player 1 is green, player 2 is blue, player 3 is red, player 4 is yellow
+	
+	user_laser_color = "00ff00",
+	user_laser_alpha = 0.7,
+	user_laser_display_mode = 2,
+	user_laser_radius = 0.25,
+	user_laser_strobe_enabled = false,
+	user_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	
+	user_flash_color = "dbddff",
+	user_flash_alpha = 1,
+	user_flash_display_mode = 2,
+	user_flash_range = 1000,
+	user_flash_angle = 60,
+	user_flash_strobe_enabled = false,
+	user_flash_strobe_string ="#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	
+	team_laser_color = "ffffff",
+	team_laser_alpha = 0.5,
+	team_laser_display_mode = 1,
+	team_laser_radius = 0.5,
+	team_laser_strobe_enabled = false,
+	team_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	
+	team_flash_color = "ffffff",
+	team_flash_alpha = 1,
+	team_flash_range = 1000,
+	team_flash_angle = 60,
+	team_flash_strobe_enabled = false,
+	team_flash_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	
+	enemy_laser_color = "ff0000",
+	enemy_laser_alpha = 0.7,
+	enemy_laser_display_mode = 2,
+	enemy_laser_radius = 0.5,
+	enemy_laser_strobe_enabled = true,
+	enemy_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	
+	enemy_flash_alpha = 1,
+	enemy_flash_range = 1000,
+	enemy_flash_angle = 60,
+	enemy_flash_strobe_enabled = false,
+	enemy_flash_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	
+	world_laser_color = "ff0000",
+	world_laser_alpha = 1,
+	world_laser_display_mode = 2,
+	world_laser_radius = 0.25,
+	world_laser_strobe_enabled = true,
+	world_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	
+	turret_att_laser_color = "ff0000",
+	turret_mad_laser_color = "00ffff",
+	turret_rld_laser_color = "ffff00",
+	turret_laser_alpha = 0.9,
+	turret_laser_display_mode = 1,
+	turret_laser_radius = 0.5,
+	turret_attack_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	turret_mad_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	turret_reload_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff"
+}
+LasersPlus.settings = table.deep_map_copy(LasersPlus.default_settings)
+
+-- can be changed via the ini file
+LasersPlus.config = {
+	peer_color_1 = "0x30ed4f",
+	peer_color_2 = "0x334cff",
+	peer_color_3 = "0xff2659",
+	peer_color_4 = "0xd88c19",
+	peer_color_5 = "0x00ffff"
+}
+
+-- misnomer as world and sentry lasers aren't literally set up with gadgets,
+-- and in fact don't even have flashlights,
+-- but i need to categorize them somehow;
+-- these basically just hold settings in processed/userdata form
+LasersPlus._gadget_templates = {
+	laser = {
+		user = {},
+		team = {},
+		enemy = {},
+		world = {},
+		turret = {}
+	},
+	flashlight = {
+		user = {},
+		team = {},
+		enemy = {}
+--,		world = {},
+--		turr_att = {},
+--		turr_rld = {},
+--		turr_mad = {}
+	}
+}
+
+
+-- previously, this was a lookup table by peer
+-- then by steamid, but uh. epic games. so.
+LasersPlus._gadget_colors_by_user = {
+	--[[
+	[user_id] = {
+		laser_color = "ffd700",
+		laser_w = 0,
+		flash_color = "ffffff"
+		
+	}
+	
+	--]]
+}
+
+
+--Enables the whole mod's effects
+function LasersPlus:IsEnabled()
+	return self.settings.enabled_mod_master
+end
+
+function LasersPlus:GetGadgetTemplate(gadget_type,user_type)
+	return self._gadget_templates[gadget_type][user_type]
+end
+
+function LasersPlus:SetupAllGadgetTemplates()
+	self:SetupUserGadgetTemplates()
+	self:SetupTeamGadgetTemplates()
+	self:SetupEnemyGadgetTemplates()
+	self:SetupWorldGadgetTemplates()
+	self:SetupTurretGadgetTemplates()
+end
+
+function LasersPlus:SetupUserGadgetTemplates()
+	local laser_templates = self._gadget_templates.laser
+	laser_templates.user.color = Color(self.settings.user_laser_color)
+	laser_templates.user.alpha = self.settings.user_laser_alpha
+	laser_templates.user.radius = self.settings.user_laser_radius
+	laser_templates.user.mode = self.settings.user_laser_display_mode
+	laser_templates.user.strobe_enabled = self.settings.user_laser_strobe_enabled
+	laser_templates.user.strobe_data = self:StringToStrobe(self.settings.user_laser_strobe_string)
+	
+	local flash_templates = self._gadget_templates.flashlight
+	flash_templates.user.color = Color(self.settings.user_flash_color)
+	flash_templates.user.alpha = self.settings.user_flash_alpha
+	flash_templates.user.range = self.settings.user_flash_range
+	flash_templates.user.angle = self.settings.user_flash_angle
+	flash_templates.user.mode = self.settings.user_flash_display_mode
+	flash_templates.user.strobe_enabled = self.settings.user_flash_strobe_enabled
+	flash_templates.user.strobe_data = self:StringToStrobe(self.settings.user_flash_strobe_string)
+end
+function LasersPlus:SetupTeamGadgetTemplates()
+	local laser_templates = self._gadget_templates.laser
+	laser_templates.team.color = Color(self.settings.team_laser_color)
+	laser_templates.team.alpha = self.settings.team_laser_alpha
+	laser_templates.team.mode = self.settings.team_laser_display_mode
+	laser_templates.team.radius = self.settings.team_laser_radius
+	laser_templates.team.strobe_enabled = self.settings.team_laser_strobe_enabled
+	laser_templates.team.strobe_data = self:StringToStrobe(self.settings.team_laser_strobe_string)
+	
+	local flash_templates = self._gadget_templates.flashlight
+	flash_templates.team.color = Color(self.settings.team_flash_color)
+	flash_templates.team.alpha = self.settings.team_flash_alpha
+	flash_templates.team.range = self.settings.team_flash_range
+	flash_templates.team.angle = self.settings.team_flash_angle
+	flash_templates.team.strobe_enabled = self.settings.team_flash_strobe_enabled
+	flash_templates.team.strobe_data = self:StringToStrobe(self.settings.team_flash_strobe_string)
+end
+function LasersPlus:SetupEnemyGadgetTemplates()
+	local laser_templates = self._gadget_templates.laser
+	laser_templates.enemy.color = Color(self.settings.enemy_laser_color)
+	laser_templates.enemy.alpha = self.settings.enemy_laser_alpha
+	laser_templates.enemy.mode = self.settings.enemy_laser_display_mode
+	laser_templates.enemy.radius = self.settings.enemy_laser_radius
+	laser_templates.enemy.strobe_enabled = self.settings.enemy_laser_strobe_enabled
+	laser_templates.enemy.strobe_data = self:StringToStrobe(self.settings.enemy_laser_strobe_string)
+	
+	local flash_templates = self._gadget_templates.flashlight
+	flash_templates.enemy.color = Color(self.settings.enemy_flash_color)
+	flash_templates.enemy.alpha = self.settings.enemy_flash_alpha
+	flash_templates.enemy.range = self.settings.enemy_flash_range
+	flash_templates.enemy.angle = self.settings.enemy_flash_angle
+	flash_templates.enemy.strobe_enabled = self.settings.enemy_flash_strobe_enabled
+	flash_templates.enemy.strobe_data = self:StringToStrobe(self.settings.enemy_flash_strobe_string)
+end
+function LasersPlus:SetupWorldGadgetTemplates()
+	local laser_templates = self._gadget_templates.laser
+	laser_templates.world.color = Color(self.settings.world_laser_color)
+	laser_templates.world.alpha = self.settings.world_laser_alpha
+	laser_templates.world.mode = self.settings.world_laser_display_mode
+	laser_templates.world.radius = self.settings.world_laser_radius
+	laser_templates.world.strobe_enabled = self.settings.world_laser_strobe_enabled
+	laser_templates.world.strobe_data = self:StringToStrobe(self.settings.world_laser_strobe_string)
+end
+function LasersPlus:SetupTurretGadgetTemplates()
+	local laser_templates = self._gadget_templates.laser
+	laser_templates.turret.color_attack = Color(self.settings.turret_att_laser_color)
+	laser_templates.turret.color_mad = Color(self.settings.turret_mad_laser_color)
+	laser_templates.turret.color_reload = Color(self.settings.turret_rld_laser_color)
+	
+	laser_templates.turret.alpha = self.settings.turret_laser_alpha
+	laser_templates.turret.mode = self.settings.turret_laser_display_mode
+	laser_templates.turret.radius = self.settings.turret_laser_radius
+	
+	laser_templates.turret.strobe_enabled = self.settings.turret_laser_strobe_enabled
+	laser_templates.turret.strobe_data_attack = self:StringToStrobe(self.settings.turret_attack_laser_strobe_string)
+	laser_templates.turret.strobe_data_mad = self:StringToStrobe(self.settings.turret_mad_laser_strobe_string)
+	laser_templates.turret.strobe_data_reload = self:StringToStrobe(self.settings.turret_reload_laser_strobe_string)
+end
+
+-- hooked to both laser and flashlight
+function LasersPlus.UpdateGadget(gadgetbase,unit,t,dt)
+	-- update strobe
+	--[[
+	local strobe_data = gadgetbase._lp_data
+	if strobe_data then
+		local _t = gadgetbase._lp_strobe_t + dt * strobe_data.speed
+		local index = math.floor(_t) % lp_data.strobe_count
+		if strobe_data.index ~= index then
+			strobe_data.index = index
+			local color = strobe_data[index + 1]
+			gadgetbase:set_color(color)
+		end
+	end
+	--]]
+end
+
+function LasersPlus:convert_save_data(settings_from_file)
+	if settings_from_file.version == self.LASERSPLUS_SAVEFILE_VERSION then
+		return settings_from_file
+	else
+		local old = settings_from_file
+		if self.LASERSPLUS_SAVEFILE_VERSION == "v3" then
+			local new_settings = table.deep_map_copy(self.default_settings)
+			if not old.version then
+				-- convert from 2.91 and below
+				
+				local function apply_float_with_fallback(value,fallback)
+					value = value and tonumber(value)
+					if value then 
+						return value
+					end
+					return fallback
+				end
+				
+				local function apply_color_with_fallback(r,g,b,fallback)
+					r = r and tonumber(r)
+					g = g and tonumber(g)
+					b = b and tonumber(b)
+					if r and g and b then 
+						return string.format("%02x%02x%02x",r,g,b)
+					end
+					return fallback
+				end
+				
+				local function apply_bool_with_fallback(value,fallback)
+					if value ~= nil then
+						return value and true or false
+					end
+					return fallback
+				end
+				
+				
+	-- ====================================
+	-- main features/toggles
+	-- ====================================
+				
+					-- master enable
+				new_settings.feature_enabled_master 					= apply_bool_with_fallback(old.enabled_mod_master,new_settings.feature_enabled_master)
+					
+					-- laser strobes (all)
+				new_settings.feature_enabled_laser_strobe				= apply_bool_with_fallback(old.enabled_laser_strobes_master,new_settings.feature_enabled_laser_strobe)
+					
+					-- flashlight strobes (all)
+				new_settings.feature_enabled_flash_strobe				= apply_bool_with_fallback(old.enabled_flashlight_strobes_master,new_settings.feature_enabled_flash_strobe)
+					
+					-- peer laser syncing
+				new_settings.feature_enabled_laser_network_sync			= apply_bool_with_fallback(old.enabled_networking,new_settings.feature_enabled_laser_network_sync)
+					
+					-- peer flashlight syncing
+				new_settings.feature_enabled_flash_network_sync			= apply_bool_with_fallback(old.enabled_networking,new_settings.feature_enabled_flash_network_sync)
+				
+					-- peer laser filtering ("No Red [Player] Lasers" integration)
+				new_settings.feature_enabled_laser_redfilter			= apply_bool_with_fallback(old.enabled_redfilter,new_settings.feature_enabled_laser_redfilter)
+				
+					-- general blackmarket qol changes 
+				if old.enabled_blackmarket_qol then
+					-- "Change Default Sight Reticule and Gadget Color" integration
+					new_settings.feature_enabled_qol_defaultgadget = true
+					
+					-- written like this instead of apply_bool_with_fallback
+					-- because the enabled_blackmarket_qol flag is supposed to be a category that encompasses multiple tweaks
+				end
+				
+				new_settings.feature_enabled_gadget_multigadget			= apply_bool_with_fallback(old.enabled_multigadget,new_settings.feature_enabled_gadget_multigadget)
+				
+				new_settings.feature_enabled_gadget_overload			= apply_bool_with_fallback(old.enabled_gadget_overload,new_settings.feature_enabled_gadget_overload)
+				
+				new_settings.qol_defaultgadget_sight_color				= apply_bool_with_fallback(old.sight_color,new_settings.blackmarket_qol_defaultgadget_sight_color)
+				new_settings.qol_defaultgadget_sight_type				= apply_bool_with_fallback(old.sight_type,new_settings.blackmarket_qol_defaultgadget_sight_type)
+				
+				
+	-- ====================================
+	-- individual laser/flashlight settings
+	-- ====================================
+				
+				
+				-- ------------------------------------------
+					-- local player
+				-- ------------------------------------------
+				if old.own_laser_display_mode then
+					local value = old.own_laser_display_mode
+					if value == 1 then
+						-- hidden
+						new_settings.laser_display_user = value
+					elseif value == 2 then
+						-- vanilla
+						new_settings.laser_display_user = value
+					elseif value == 3 then
+						-- custom (use lasersplus settings)
+						new_settings.laser_display_user = value
+					elseif value == 4 then
+						new_settings.laser_display_user = 3 -- use "custom", enable strobe
+						new_settings.laser_strobe_user = true
+					end
+				end
+				new_settings.laser_color_user							= apply_color_with_fallback(old.own_laser_red,old.own_laser_green,old.own_laser_blue, new_settings.laser_color_user)
+				new_settings.laser_alpha_user							= apply_float_with_fallback(old.own_laser_alpha, new_settings.laser_alpha_user)
+				
+				
+				if old.own_flashlight_display_mode then
+					local value = old.own_flashlight_display_mode
+					if value == 1 then
+						-- hidden
+						new_settings.flash_display_user = value
+					elseif value == 2 then
+						-- vanilla
+						new_settings.flash_display_user = value
+					elseif value == 3 then
+						-- custom (use lasersplus settings)
+						new_settings.flash_display_user = value
+					elseif value == 4 then
+						new_settings.flash_display_user = 3 -- use "custom", enable strobe
+						new_settings.flash_strobe_user = true
+					end
+				end
+				new_settings.flash_color_user							= apply_color_with_fallback(old.own_flash_red,old.own_flash_green,old.own_flash_blue, new_settings.flash_color_user)
+				new_settings.flash_alpha_user							= apply_float_with_fallback(old.own_flash_alpha, new_settings.flash_alpha_user)
+				
+				-- ------------------------------------------
+					-- teammates (peers or ai crew members if you have a bot equipment mod that lets them use gadgets)
+				-- ------------------------------------------
+				if old.team_laser_display_mode then
+					local value = old.team_laser_display_mode
+					if value == 1 then
+						-- hidden
+						new_settings.laser_display_team = value
+					elseif value == 2 then
+						-- vanilla
+						new_settings.laser_display_team = value
+					elseif value == 3 then
+						-- custom (use lasersplus settings)
+						new_settings.laser_display_team = value
+					elseif value == 4 then
+						-- peer color
+						new_settings.laser_display_team = value
+					end
+				end
+				new_settings.laser_color_team							= apply_color_with_fallback(old.team_laser_red,old.team_laser_green,old.team_laser_blue, new_settings.laser_color_team)
+				new_settings.laser_alpha_team							= apply_float_with_fallback(old.team_laser_alpha, new_settings.laser_alpha_team)
+				
+				if old.team_flashlight_display_mode then
+					local value = old.team_flashlight_display_mode
+					if value == 1 then
+						-- hidden
+						new_settings.flash_display_team = value
+					elseif value == 2 then
+						-- vanilla
+						new_settings.flash_display_team = value
+					elseif value == 3 then
+						-- custom (use lasersplus settings)
+						new_settings.flash_display_team = value
+					end
+				end
+				new_settings.flash_strobe_team							= apply_bool_with_fallback(old.team_flashlight_strobe_enabled,new_settings.flash_strobe_team)
+				new_settings.flash_color_team							= apply_color_with_fallback(old.team_flash_red,old.team_flash_green,old.team_flash_blue, new_settings.flash_color_team)
+				new_settings.flash_alpha_team							= apply_float_with_fallback(old.team_flash_alpha, new_settings.flash_alpha_team)
+				
+				
+				-- ------------------------------------------
+					-- enemy lasers/flashlights (eg snipers, guards)
+				-- ------------------------------------------
+				if old.sniper_display_mode then
+					local value = old.sniper_display_mode
+					if value == 1 then
+						-- hidden
+						new_settings.laser_display_enemy = value
+					elseif value == 2 then
+						-- vanilla
+						new_settings.laser_display_enemy = value
+					elseif value == 3 then
+						-- custom (use lasersplus settings)
+						new_settings.laser_display_enemy = value
+					end
+				end
+				new_settings.laser_strobe_enemy							= apply_bool_with_fallback(old.sniper_strobe_enabled,new_settings.laser_strobe_enemy)
+				new_settings.laser_color_enemy							= apply_color_with_fallback(old.snpr_red,old.snpr_green,old.snpr_blue, new_settings.laser_color_enemy)
+				new_settings.laser_alpha_enemy							= apply_float_with_fallback(old.snpr_alpha, new_settings.laser_alpha_enemy)
+				
+				if old.cop_flashlight_display_mode then
+					local value = old.cop_flashlight_display_mode
+					if value == 1 then
+						-- hidden
+						new_settings.flash_display_enemy = value
+					elseif value == 2 then
+						-- vanilla
+						new_settings.flash_display_enemy = value
+					elseif value == 3 then
+						-- custom (use lasersplus settings)
+						new_settings.flash_display_enemy = value
+					end
+				end
+				new_settings.flash_strobe_enemy							= apply_bool_with_fallback(old.npc_flashlight_strobe_enabled,new_settings.flash_strobe_enemy)
+				new_settings.flash_color_enemy							= apply_color_with_fallback(old.npc_flash_red,old.npc_flash_green,old.npc_flash_blue, new_settings.flash_color_enemy)
+				new_settings.flash_alpha_enemy							= apply_float_with_fallback(old.npc_flash_alpha, new_settings.flash_alpha_enemy)
+				
+				
+				-- ------------------------------------------
+					-- turret lasers (both friendly and enemy)
+				-- ------------------------------------------
+				if old.turret_display_mode then
+					local value = old.turret_display_mode
+					if value == 1 then
+						-- hidden
+						new_settings.laser_display_turret = value
+					elseif value == 2 then
+						-- vanilla
+						new_settings.laser_display_turret = value
+					elseif value == 3 then
+						-- custom (use lasersplus settings)
+						new_settings.laser_display_turret = value
+					end
+				end
+				new_settings.laser_strobe_turret						= apply_bool_with_fallback(old.turret_strobe_enabled,new_settings.laser_strobe_turret)
+				new_settings.laser_color_world							= apply_color_with_fallback(old.wl_red,old.wl_green,old.wl_blue, new_settings.laser_color_world)
+				new_settings.laser_alpha_world							= apply_float_with_fallback(old.wl_alpha, new_settings.laser_alpha_world)
+				
+				
+				-- ------------------------------------------
+					-- world lasers (eg vault lasers)
+				-- ------------------------------------------
+				if old.world_display_mode then
+					local value = old.world_display_mode
+					if value == 1 then
+						-- hidden
+						new_settings.laser_display_world = value
+					elseif value == 2 then
+						-- vanilla
+						new_settings.laser_display_world = value
+					elseif value == 3 then
+						-- custom (use lasersplus settings)
+						new_settings.laser_display_world = value
+					end
+				end
+				new_settings.laser_strobe_world						= apply_bool_with_fallback(old.world_strobe_enabled,new_settings.laser_strobe_world)
+				new_settings.laser_color_world							= apply_color_with_fallback(old.wl_red,old.wl_green,old.wl_blue, new_settings.laser_color_world)
+				new_settings.laser_alpha_world							= apply_float_with_fallback(old.wl_alpha, new_settings.laser_alpha_world)
+				
+			end
+			return new_settings
+		else
+			log("ERROR: Unknown LasersPlus version",self.LASERSPLUS_SAVEFILE_VERSION)
+			return table.deep_map_copy(self.default_settings)
+		end
+		
+	end
+end
+
+function LasersPlus:LoadSettings()
+	local file = io.open(self._settings_path, "r")
+	if file then
+		for k, v in pairs(json.decode(file:read("*all"))) do
+			self.settings[k] = v
+		end
+		file:close()
+	end
+end
+
+
+function LasersPlus:SaveSettings()
+	local file = io.open(self._settings_path,"w+")
+	if file then
+		file:write(json.encode(self.settings))
+		file:close()
+	end
+end
+
+
+-- *****    Receive Data    *****
+Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(sender, message, data)
+	local EVENT_IDS = LasersPlus.NETWORK_EVENT_IDS
+	
+	if message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_ALL then
+	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_LASER then
+		--[[
+		local peer = managers.network:session():peer(sender)
+		if peer then 
+			local user_id = peer:user_id()
+			self._gadget_colors_by_user[user_id] = self._gadget_colors_by_user[user_id] or {}
+		end
+		--]]
+		--self._gadget_colors_by_user[user_id].laser
+	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH then
+	end
+	
+--[[
+	if message == LasersPlus.LuaNetID or message == LasersPlus.LegacyID then
+		local criminals_manager = managers.criminals
+		if not criminals_manager then
+			return
+		end
+		if message == LasersPlus.LegacyID and sender then 
+			lp_log("Sender with peerid [" .. sender .. "] is running legacy Networked Lasers!")
+			--should we... decode it?
+		elseif message == LasersPlus.LuaNetID and sender then 
+			if type(data) ~= "string" then
+				lp_log("Wrong data type received!")
+				--this shouldn't ever happen anyway, luanetworking only sends strings
+				return
+			end
+		end
+
+		local char = criminals_manager:character_name_by_peer_id(sender)
+		local col = data
+		if not data then
+			lp_log("Received LuaNetworking Data is nil!")
+			--again, this should never happen
+			return
+		end
+		if string.find(data, "l") then
+			if char and not LasersPlus.SavedTeamStrobes[char] then
+				col = LasersPlus:init_strobe(LasersPlus:StringToStrobeTable(data))
+				LasersPlus.SavedTeamStrobes[char] = col
+				lp_log("Saved a team strobe to the table")
+				return
+			end
+		elseif data ~= "nil" then
+			lp_log("Found networked color data.")
+			col = LuaNetworking:StringToColour(data) --LuaNetworking:StringToColour(data)
+			if not LasersPlus:FilterRedLasers(col) then
+				col = nil
+				lp_log("Blocked laser " .. tostring(data) .. " from character " .. tostring(char or "nil") .. "(contained too much red)")
+			end
+			return
+		end
+		
+		if char then
+			LasersPlus.SavedTeamColors[char] = col --todo save based on steamid64 instead of heister-character name
+			--i dunno though this mod is already pretty bulky, i might need to be careful that this mod doesn't impact performance too much
+			lp_log("Saved networked color for character " .. tostring(char)) --or cleared if col is nil
+			return
+		end
+	end
+--]]
+end)
+
+Hooks:Add("LocalizationManagerPostInit", "lasersplus_LocalizationManagerPostInit", function( loc )
+	if not BeardLib then 
+		loc:load_localization_file(LasersPlus._default_localization_path)
+	end
+end)
+
+
+
+Hooks:Add("MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(menu_manager)
+	LasersPlus:LoadSettings()
+	LasersPlus:SetupAllGadgetTemplates()
+end)
+
+
+
+
+
+--format a strobe into a string ready to sync to other players
+function LasersPlus:StrobeToString(strobe_data)
+	local str = self.STROBE_NETWORKING_STRING_TEMPLATE
+	str = string.gsub(str,"$DURATION",string.format("%0.4f",strobe_data.duration))
+	local tbl = {}
+	for i,color_data in pairs(strobe_data.colors) do 
+		local hex = self.color_to_hex(color_data.color)
+		local position = string.format("%0.4f",color_data.position)
+		tbl[i] = position .. "," .. hex
+		color_str = color_str 
+	end
+	local color_str = table.concat(tbl,";")
+	str = string.gsub(str,"$COLORS",color_str)
+	return str
+end
+
+function LasersPlus.color_to_hex(color)
+	return string.format("%02x%02x%02x", math.min(math.max(color.r * 255,0),0xff),math.min(math.max(color.g * 255,0),0xff),math.min(math.max(color.b * 255,0),0xff))
+end
+
+--takes a string from lua networking (sent from another LasersPlus user) and parses it into an unprocessed strobe
+--name is based on the peer id of the sender, so you can only store one at a time
+function LasersPlus:StringToStrobe(s,name)
+	local FALLBACK_DURATION = 4
+	
+	local d1 = string.split(string.match(s,"%d.*"),":")
+	local duration = d1[1]
+	
+	duration = duration and tonumber(duration) or FALLBACK_DURATION
+	
+	local d2 = d1[2]
+	local d3 = string.split(d2,";")
+	local colors = {}
+	for i,d4 in pairs(d3) do 
+		local color_data = string.split(d4,",")
+		local position = color_data[1]
+		position = position and tonumber(position) or (i / #d3)
+		local new_color = {
+			position = position,
+			color = Color(color_data[2])
+		}
+		colors[#colors+1] = new_color
+	end
+	
+	--if your strobe doesn't have at least two colors then why do you need a strobe
+	if #colors < 2 then 
+		return false
+	end
+	
+	return {
+		name = name,
+		duration = duration,
+		colors = colors
+	}
+end
+
+
+-- check legacy here
+
+do return end
+
 LasersPlus._strobes_save_path = SavePath .. "lp3_strobes.json"
 LasersPlus._legacy_settings_save_path = SavePath .. "lasersplus.json"
 LasersPlus._menu_path = LasersPlus._mod_path .. "menu/options.json"
-LasersPlus._default_localization_path = LasersPlus._mod_path .. "localization/english.json"
 LasersPlus.url_colorpicker = "https://modwork.shop/29641"
-LasersPlus.STROBE_NETWORKING_STRING_TEMPLATE = "$DURATION:$COLORS"
 
 LasersPlus.LuaNetID = "lasersplus_v3"
 --these aren't used
@@ -363,11 +1022,6 @@ LasersPlus.color_to_hex = (ColorPicker and ColorPicker.color_to_hex) or (BeardLi
 
 -- ===================================== SETTINGS GETTERS ==========================================
 
---Enables the whole mod's effects
-function LasersPlus:IsEnabled()
-	return self.settings.enabled_mod_master
-end
-
 function LasersPlus:GetOwnLaserParams()
 	return {
 		color = self.settings.own_laser_color,
@@ -459,57 +1113,6 @@ function LasersPlus:GenerateStrobeFromData(strobe_data)
 	end)
 end
 
---format a strobe into a string ready to sync to other players
-function LasersPlus:StrobeToString(strobe_data)
-	local str = self.STROBE_NETWORKING_STRING_TEMPLATE
-	str = string.gsub(str,"$DURATION",string.format("%0.4f",strobe_data.duration))
-	local tbl = {}
-	for i,color_data in pairs(strobe_data.colors) do 
-		local hex = self.color_to_hex(color_data.color)
-		local position = string.format("%0.4f",color_data.position)
-		tbl[i] = position .. "," .. hex
-		color_str = color_str 
-	end
-	local color_str = table.concat(tbl,";")
-	str = string.gsub(str,"$COLORS",color_str)
-	return str
-end
-
---takes a string from lua networking (sent from another LasersPlus user) and parses it into an unprocessed strobe
---name is based on the peer id of the sender, so you can only store one at a time
-function LasersPlus:StringToStrobe(s,name)
-	local FALLBACK_DURATION = 4
-	
-	local d1 = string.split(s,":")
-	local duration = d1[1]
-	
-	duration = duration and tonumber(duration) or FALLBACK_DURATION
-	
-	local d2 = d1[2]
-	local d3 = string.split(d2,";")
-	local colors = {}
-	for i,d4 in pairs(d3) do 
-		local color_data = string.split(d4,",")
-		local position = color_data[1]
-		position = position and tonumber(position) or (i / #d3)
-		local new_color = {
-			position = position,
-			color = Color(color_data[2])
-		}
-		colors[#colors+1] = new_color
-	end
-	
-	--if your strobe doesn't have at least two colors then why do you need a strobe
-	if #colors < 2 then 
-		return false
-	end
-	
-	return {
-		name = name,
-		duration = duration,
-		colors = colors
-	}
-end
 
 --processes all current strobes and assigns each strobe an index for reference by the menu system
 function LasersPlus:UnpackStrobes()
@@ -569,92 +1172,6 @@ function LasersPlus:SaveStrobes()
 		file:close()
 	end
 end
-
-function LasersPlus:LoadSettings(skip_strobes)
-	local file = io.open(self._settings_save_path, "r")
-	if file then
-		for k, v in pairs(json.decode(file:read("*all"))) do
-			self.settings[k] = v
-		end
-		file:close()
-	else
-		LasersPlus:SaveSettings() --create data in case there's no mod save data called lasersplus.txt; saves are only generated on changing any settings otherwise
-	end
-	if not skip_strobes then
-		self:LoadStrobes()
-	end
-end
-
-
-function LasersPlus:SaveSettings(skip_strobes)
-	local file = io.open(self._settings_save_path,"w+")
-	if file then
-		file:write(json.encode(self.settings))
-		file:close()
-	end
-	if not skip_strobes then 
-		self:SaveStrobes()
-	end
-end
-	
--- *****    Receive Data    *****
-Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(sender, message, data)
---[[
-	if message == LasersPlus.LuaNetID or message == LasersPlus.LegacyID then
-		local criminals_manager = managers.criminals
-		if not criminals_manager then
-			return
-		end
-		if message == LasersPlus.LegacyID and sender then 
-			lp_log("Sender with peerid [" .. sender .. "] is running legacy Networked Lasers!")
-			--should we... decode it?
-		elseif message == LasersPlus.LuaNetID and sender then 
-			if type(data) ~= "string" then
-				lp_log("Wrong data type received!")
-				--this shouldn't ever happen anyway, luanetworking only sends strings
-				return
-			end
-		end
-
-		local char = criminals_manager:character_name_by_peer_id(sender)
-		local col = data
-		if not data then
-			lp_log("Received LuaNetworking Data is nil!")
-			--again, this should never happen
-			return
-		end
-		if string.find(data, "l") then
-			if char and not LasersPlus.SavedTeamStrobes[char] then
-				col = LasersPlus:init_strobe(LasersPlus:StringToStrobeTable(data))
-				LasersPlus.SavedTeamStrobes[char] = col
-				lp_log("Saved a team strobe to the table")
-				return
-			end
-		elseif data ~= "nil" then
-			lp_log("Found networked color data.")
-			col = LuaNetworking:StringToColour(data) --LuaNetworking:StringToColour(data)
-			if not LasersPlus:FilterRedLasers(col) then
-				col = nil
-				lp_log("Blocked laser " .. tostring(data) .. " from character " .. tostring(char or "nil") .. "(contained too much red)")
-			end
-			return
-		end
-		
-		if char then
-			LasersPlus.SavedTeamColors[char] = col --todo save based on steamid64 instead of heister-character name
-			--i dunno though this mod is already pretty bulky, i might need to be careful that this mod doesn't impact performance too much
-			lp_log("Saved networked color for character " .. tostring(char)) --or cleared if col is nil
-			return
-		end
-	end
---]]
-end)
-
-Hooks:Add("LocalizationManagerPostInit", "lasersplus_LocalizationManagerPostInit", function( loc )
-	if not BeardLib then 
-		loc:load_localization_file(LasersPlus._default_localization_path)
-	end
-end)
 
 --import settings from versions of LasersPlus prior to v3
 if SystemFS:exists( Application:nice_path( LasersPlus._legacy_settings_save_path, true )) and not SystemFS:exists( Application:nice_path( LasersPlus._settings_save_path, true )) then 
