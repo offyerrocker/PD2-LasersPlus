@@ -25,6 +25,14 @@
 			"script_path" : "hooks/newraycastweaponbase.lua"
 		},
 		{
+			"hook_id" : "lib/units/weapons/raycastweaponbase",
+			"script_path" : "hooks/raycastweaponbase.lua"
+		},
+		{
+			"hook_id" : "lib/units/weapons/npcraycastweaponbase",
+			"script_path" : "hooks/npcraycastweaponbase.lua"
+		},
+		{
 			"hook_id" : "lib/units/weapons/weaponlaser",
 			"script_path" : "hooks/weaponlaser.lua"
 		},
@@ -69,10 +77,6 @@
 		{
 			"hook_id" : "lib/units/weapons/sentrygunweapon",
 			"script_path" : "hooks/sentrygunweapon.lua"
-		},
-		{
-			"hook_id" : "lib/managers/mission/elementlasertrigger",
-			"script_path" : "hooks/worldlaser.lua"
 		}
 	],
 	"disabledhooks" : [

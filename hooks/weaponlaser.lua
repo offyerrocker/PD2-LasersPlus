@@ -18,27 +18,6 @@ Hooks:PreHook(WeaponLaser,"destroy","lasersplus_gadget_destroy",function(self,un
 	end
 end)
 
-function WeaponLaser:set_lasersplus_type(user_type,...)
-	WeaponLaser.super.set_lasersplus_type(self,user_type,...)
-	
---	local user_type = self._lp_user_type
-	
-	local template_data = LasersPlus:GetGadgetTemplate("laser",user_type)
---	if LasersPlus:IsUserTypeEnabled("laser",self._lp_user_type) then
-	if template_data and template_data.mode ~= 1 then
-		if template_data.color then 
-			self:set_color(template_data.color)
-		end
-		--[[
-		self._lp_data = {
-			index = 0, -- current strobe frame
-			speed = 2,
-			settings = template_data
-		}
-		--]]
-	else
-		self._lp_data = nil
-	end
-end
 
-Hooks:PostHook(WeaponLaser,"update","lasersplus_laser_update",LasersPlus.UpdateGadget)
+Hooks:PreHook(WeaponLaser,"update","lasersplus_laser_update",function (...) LasersPlus.UpdateGadget(...) end)
+--Hooks:PreHook(WeaponLaser,"update","lasersplus_laser_update",LasersPlus.UpdateGadget)

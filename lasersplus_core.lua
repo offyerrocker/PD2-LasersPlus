@@ -31,7 +31,7 @@ LasersPlus.default_settings = {
 	user_laser_alpha = 0.7,
 	user_laser_display_mode = 2,
 	user_laser_radius = 0.25,
-	user_laser_strobe_enabled = false,
+	user_laser_strobe_enabled = true,
 	user_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
 	
 	user_flash_color = "dbddff",
@@ -100,7 +100,9 @@ LasersPlus.config = {
 -- misnomer as world and sentry lasers aren't literally set up with gadgets,
 -- and in fact don't even have flashlights,
 -- but i need to categorize them somehow;
--- these basically just hold settings in processed/userdata form
+-- these basically just hold settings in processed/userdata form.
+-- note that each one is explicitly NOT identical, though they are similar.
+-- eg. world has no radius option
 LasersPlus._gadget_templates = {
 	laser = {
 		user = {},
@@ -231,20 +233,53 @@ function LasersPlus:SetupTurretGadgetTemplates()
 end
 
 -- hooked to both laser and flashlight
-function LasersPlus.UpdateGadget(gadgetbase,unit,t,dt)
+function LasersPlus.UpdateGadget(self,unit,t,dt)
 	-- update strobe
-	--[[
-	local strobe_data = gadgetbase._lp_data
-	if strobe_data then
-		local _t = gadgetbase._lp_strobe_t + dt * strobe_data.speed
-		local index = math.floor(_t) % lp_data.strobe_count
-		if strobe_data.index ~= index then
-			strobe_data.index = index
-			local color = strobe_data[index + 1]
-			gadgetbase:set_color(color)
+	local lp_data = self._lp_data
+	if lp_data and lp_data.settings and lp_data.settings.strobe_enabled and lp_data.settings.strobe_data then 
+		local _t = self._lp_strobe_t + dt * lp_data.speed
+		self._lp_strobe_t = _t
+		
+--		Console:SetTracker(string.format("upd t %0.2f",_t,lp_data.next_frame_t),1)
+		local strobe_data = lp_data.settings.strobe_data
+		local duration = strobe_data.duration
+		local frames = strobe_data.colors
+		
+		if _t >= lp_data.next_frame_t then
+			
+			local last_frame = frames[1 + lp_data.index]
+			lp_data.prev_color = last_frame.color
+			
+			local index = (lp_data.index + 1) % lp_data.strobe_count
+			lp_data.index = index
+			local frame = frames[1 + index]
+			
+			local frame_duration = duration * ((frame.position - last_frame.position) % 1)
+			lp_data.next_frame_t = lp_data.next_frame_t + frame_duration
+			lp_data.frame_duration = frame_duration
 		end
+		
+		local frame = frames[lp_data.index + 1]
+		if frame then
+			local prev_color = lp_data.prev_color
+			local col_d = frame.color - prev_color
+			
+			-- todo nonlinear interpolation?
+			-- quadratic/sin?
+			local lerp = 1 - (lp_data.next_frame_t - _t) / lp_data.frame_duration
+			
+			local color = prev_color + col_d * lerp
+--			Console:SetTracker(string.format("upd t %0.2f %i lerp %0.2f / frame_duration %0.2f",_t,lp_data.index,lerp,lp_data.frame_duration),1)
+
+			local alpha = lp_data.settings.alpha
+			if alpha then
+				self:set_color(color:with_alpha(alpha))
+			else
+				self:set_color(color)
+			end
+		end
+		
 	end
-	--]]
 end
 
 function LasersPlus:convert_save_data(settings_from_file)
