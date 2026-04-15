@@ -46,7 +46,6 @@ end)
 
 function WeaponFlashLight:set_lasersplus_type(user_type,...)
 	WeaponFlashLight.super.set_lasersplus_type(self,user_type,...)
-	
 	local function f_setup(template_data)
 		if alive(self._light) then
 			if template_data and template_data.mode ~= 1 then
@@ -76,11 +75,9 @@ function WeaponFlashLight:set_lasersplus_type(user_type,...)
 		end
 	end
 	
-	if self.GADGET_TYPE == "laser" or self.GADGET_TYPE == "flashlight" then
-		Hooks:Add("OnLasersPlusSettingChanged_Flashlight",self._lp_key,f_setup)
-		local template_data = LasersPlus:GetGadgetTemplate(self.GADGET_TYPE,user_type)
-		f_setup(template_data)
-	end
+	Hooks:Add("OnLasersPlusSettingChanged_Flashlight",self._lp_key,f_setup)
+	local template_data = LasersPlus:GetGadgetTemplate(self.GADGET_TYPE,user_type)
+	f_setup(template_data)
 end
 
 
