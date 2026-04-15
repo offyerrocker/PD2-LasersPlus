@@ -19,5 +19,10 @@ Hooks:PreHook(WeaponLaser,"destroy","lasersplus_gadget_destroy",function(self,un
 end)
 
 
-Hooks:PreHook(WeaponLaser,"update","lasersplus_laser_update",function (...) LasersPlus.UpdateGadget(...) end)
+Hooks:PreHook(WeaponLaser,"update","lasersplus_laser_update",function(self,unit,t,dt)
+	local color = LasersPlus.UpdateGadget(self._lp_data,t,dt)
+	if color then 
+		self:set_color(color)
+	end
+end)
 --Hooks:PreHook(WeaponLaser,"update","lasersplus_laser_update",LasersPlus.UpdateGadget)

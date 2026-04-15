@@ -233,12 +233,11 @@ function LasersPlus:SetupTurretGadgetTemplates()
 end
 
 -- hooked to both laser and flashlight
-function LasersPlus.UpdateGadget(self,unit,t,dt)
+function LasersPlus.UpdateGadget(lp_data,t,dt)
 	-- update strobe
-	local lp_data = self._lp_data
 	if lp_data and lp_data.settings and lp_data.settings.strobe_enabled and lp_data.settings.strobe_data then 
-		local _t = self._lp_strobe_t + dt * lp_data.speed
-		self._lp_strobe_t = _t
+		local _t = lp_data.t + dt * lp_data.speed
+		lp_data.t = _t
 		
 --		Console:SetTracker(string.format("upd t %0.2f",_t,lp_data.next_frame_t),1)
 		local strobe_data = lp_data.settings.strobe_data
@@ -273,9 +272,11 @@ function LasersPlus.UpdateGadget(self,unit,t,dt)
 
 			local alpha = lp_data.settings.alpha
 			if alpha then
-				self:set_color(color:with_alpha(alpha))
+				--self:set_color(color:with_alpha(alpha))
+				return color:with_alpha(alpha)
 			else
-				self:set_color(color)
+				return color
+				--self:set_color(color)
 			end
 		end
 		

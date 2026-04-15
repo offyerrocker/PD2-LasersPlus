@@ -30,7 +30,12 @@ Hooks:PreHook(WeaponFlashlight,"destroy","lasersplus_gadget_destroy",function(se
 	end
 end)
 
-Hooks:PostHook(WeaponFlashLight,"update","lasersplus_flashlight_update",LasersPlus.UpdateGadget)
+Hooks:PostHook(WeaponFlashLight,"update","lasersplus_flashlight_update",function(self,unit,t,dt)
+	local color = LasersPlus.UpdateGadget(self._lp_data,t,dt)
+	if color then 
+		self:set_color(color)
+	end
+end)
 
 
 
