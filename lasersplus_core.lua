@@ -1,5 +1,3 @@
---unused
-
 LasersPlus = LasersPlus or {}
 LasersPlus._mod_path = LasersPlusCore.GetPath and LasersPlusCore:GetPath() or ModPath
 LasersPlus._default_localization_path = LasersPlus._mod_path .. "localization/english.json"
@@ -153,7 +151,6 @@ LasersPlus._gadget_templates = {
 	}
 }
 
-
 -- previously, this was a lookup table by peer
 -- then by steamid, but uh. epic games. so.
 LasersPlus._gadget_colors_by_user = {
@@ -173,6 +170,155 @@ LasersPlus.LASER_THEMES_LOOKUP = {
 	turret_module_rearming = "turretrld",
 	turret_module_mad = "turretmad"
 }
+
+
+-- ===================================== Utils ==========================================
+
+function LasersPlus.color_to_hex(color)
+	return string.format("%02x%02x%02x", math.min(math.max(color.r * 255,0),0xff),math.min(math.max(color.g * 255,0),0xff),math.min(math.max(color.b * 255,0),0xff))
+end
+
+--format a strobe into a string ready to sync to other players
+function LasersPlus:StrobeToString(strobe_data)
+	local str = self.STROBE_NETWORKING_STRING_TEMPLATE
+	str = string.gsub(str,"$DURATION",string.format("%0.4f",strobe_data.duration))
+	local tbl = {}
+	for i,color_data in pairs(strobe_data.colors) do 
+		local hex = self.color_to_hex(color_data.color)
+		local position = string.format("%0.4f",color_data.position)
+		tbl[i] = position .. "," .. hex
+		color_str = color_str 
+	end
+	local color_str = table.concat(tbl,";")
+	str = string.gsub(str,"$COLORS",color_str)
+	return str
+end
+
+--takes a string from lua networking (sent from another LasersPlus user) and parses it into an unprocessed strobe
+--name is based on the peer id of the sender, so you can only store one at a time
+function LasersPlus:StringToStrobe(s,name)
+	local FALLBACK_DURATION = 4
+	
+	local d1 = string.split(string.match(s,"%d.*"),":")
+	local duration = d1[1]
+	
+	duration = duration and tonumber(duration) or FALLBACK_DURATION
+	
+	local d2 = d1[2]
+	local d3 = string.split(d2,";")
+	local colors = {}
+	for i,d4 in pairs(d3) do 
+		local color_data = string.split(d4,",")
+		local position = color_data[1]
+		position = position and tonumber(position) or (i / #d3)
+		local new_color = {
+			position = position,
+			color = Color(color_data[2])
+		}
+		colors[#colors+1] = new_color
+	end
+	
+	--if your strobe doesn't have at least two colors then why do you need a strobe
+	if #colors < 2 then 
+		return false
+	end
+	
+	return {
+		name = name,
+		duration = duration,
+		colors = colors
+	}
+end
+
+function LasersPlus:GetUserTypeByTheme(mode)
+	return mode and self.LASER_THEMES_LOOKUP[mode]
+end
+
+
+-- ===================================== Settings Getters ==========================================
+
+function LasersPlus:IsGadgetNetworkSyncEnabled()
+	return self.settings.feature_enabled_gadget_network_sync
+end
+
+function LasersPlus:IsLaserRedFilterEnabled()
+	return self.settings.feature_enabled_laser_redfilter
+end
+
+function LasersPlus:IsMultiGadgetEnabled()
+	return self.settings.feature_enabled_gadget_multigadget
+end
+
+function LasersPlus:IsGadgetOverloadEnabled()
+	return self.settings.feature_enabled_gadget_overload
+end
+
+-- combined getter for feature: default sight gadget, default laser/flashlight color
+function LasersPlus:IsQOLDefaultGadgetEnabled()
+	return self.settings.feature_enabled_qol_defaultgadget
+end
+
+function LasersPlus:GetSightTextureIndex()
+	return self.settings.qol_defaultgadget_sight_type
+end
+function LasersPlus:GetSightColorIndex()
+	return self.settings.qol_defaultgadget_sight_color
+end
+
+
+-- ===================================== Templates/Management ==========================================
+
+-- hooked to both laser and flashlight
+function LasersPlus.UpdateGadget(lp_data,t,dt)
+	-- update strobe
+	if lp_data and lp_data.settings and lp_data.settings.strobe_enabled and lp_data.settings.strobe_data then 
+		local _t = lp_data.t + dt * lp_data.speed
+		lp_data.t = _t
+		
+--		Console:SetTracker(string.format("upd t %0.2f",_t,lp_data.next_frame_t),1)
+		local strobe_data = lp_data.settings.strobe_data
+		local duration = strobe_data.duration
+		local frames = strobe_data.colors
+		
+		if _t >= lp_data.next_frame_t then
+			
+			local last_frame = frames[1 + lp_data.index]
+			lp_data.prev_color = last_frame.color
+			
+			local index = (lp_data.index + 1) % lp_data.strobe_count
+			lp_data.index = index
+			local frame = frames[1 + index]
+			
+			local frame_duration = duration * ((frame.position - last_frame.position) % 1)
+			lp_data.next_frame_t = lp_data.next_frame_t + frame_duration
+			lp_data.frame_duration = frame_duration
+		end
+		
+		local frame = frames[lp_data.index + 1]
+		if frame then
+			local prev_color = lp_data.prev_color
+			local col_d = frame.color - prev_color
+			
+			-- todo nonlinear interpolation?
+			-- quadratic/sin?
+			local lerp = 1 - (lp_data.next_frame_t - _t) / lp_data.frame_duration
+			
+			local color = prev_color + col_d * lerp
+--			Console:SetTracker(string.format("upd t %0.2f %i lerp %0.2f / frame_duration %0.2f",_t,lp_data.index,lerp,lp_data.frame_duration),1)
+
+			local alpha = lp_data.settings.alpha
+			if alpha then
+				--self:set_color(color:with_alpha(alpha))
+				return color:with_alpha(alpha)
+			else
+				return color
+				--self:set_color(color)
+			end
+		end
+		
+	end
+end
+
 
 function LasersPlus:GetGadgetTemplate(gadget_type,user_type)
 	return self._gadget_templates[gadget_type][user_type]
@@ -278,60 +424,27 @@ function LasersPlus:SetupTurretMadGadgetTemplates()
 	laser_templates.turretmad.strobe_data = self:StringToStrobe(self.settings.turretmad_laser_strobe_string)
 end
 
-function LasersPlus:GetUserTypeByTheme(mode)
-	return mode and self.LASER_THEMES_LOOKUP[mode]
-end
 
--- hooked to both laser and flashlight
-function LasersPlus.UpdateGadget(lp_data,t,dt)
-	-- update strobe
-	if lp_data and lp_data.settings and lp_data.settings.strobe_enabled and lp_data.settings.strobe_data then 
-		local _t = lp_data.t + dt * lp_data.speed
-		lp_data.t = _t
-		
---		Console:SetTracker(string.format("upd t %0.2f",_t,lp_data.next_frame_t),1)
-		local strobe_data = lp_data.settings.strobe_data
-		local duration = strobe_data.duration
-		local frames = strobe_data.colors
-		
-		if _t >= lp_data.next_frame_t then
-			
-			local last_frame = frames[1 + lp_data.index]
-			lp_data.prev_color = last_frame.color
-			
-			local index = (lp_data.index + 1) % lp_data.strobe_count
-			lp_data.index = index
-			local frame = frames[1 + index]
-			
-			local frame_duration = duration * ((frame.position - last_frame.position) % 1)
-			lp_data.next_frame_t = lp_data.next_frame_t + frame_duration
-			lp_data.frame_duration = frame_duration
-		end
-		
-		local frame = frames[lp_data.index + 1]
-		if frame then
-			local prev_color = lp_data.prev_color
-			local col_d = frame.color - prev_color
-			
-			-- todo nonlinear interpolation?
-			-- quadratic/sin?
-			local lerp = 1 - (lp_data.next_frame_t - _t) / lp_data.frame_duration
-			
-			local color = prev_color + col_d * lerp
---			Console:SetTracker(string.format("upd t %0.2f %i lerp %0.2f / frame_duration %0.2f",_t,lp_data.index,lerp,lp_data.frame_duration),1)
+-- ===================================== I/O ==========================================
 
-			local alpha = lp_data.settings.alpha
-			if alpha then
-				--self:set_color(color:with_alpha(alpha))
-				return color:with_alpha(alpha)
-			else
-				return color
-				--self:set_color(color)
-			end
+function LasersPlus:LoadSettings()
+	local file = io.open(self._settings_path, "r")
+	if file then
+		for k, v in pairs(json.decode(file:read("*all"))) do
+			self.settings[k] = v
 		end
-		
+		file:close()
 	end
 end
+
+function LasersPlus:SaveSettings()
+	local file = io.open(self._settings_path,"w+")
+	if file then
+		file:write(json.encode(self.settings))
+		file:close()
+	end
+end
+
 
 function LasersPlus:convert_save_data(settings_from_file)
 	if settings_from_file.version == self.LASERSPLUS_SAVEFILE_VERSION then
@@ -592,6 +705,168 @@ function LasersPlus:convert_save_data(settings_from_file)
 	end
 end
 
+
+-- ===================================== Networking ==========================================
+
+Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(sender, message, body)
+	local EVENT_IDS = LasersPlus.NETWORK_EVENT_IDS
+	
+	if message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_ALL then
+	
+		local peer = managers.network:session():peer(sender)
+		if peer then 
+			LasersPlus:StorePeerColor(peer,body,"combined",nil)
+		end
+		
+	--[[
+	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_LASER then
+		
+		local peer = managers.network:session():peer(sender)
+		if peer then 
+			LasersPlus:StorePeerColor(peer,body,"laser",nil)
+		end
+		
+	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH then
+		
+		local peer = managers.network:session():peer(sender)
+		if peer then 
+			LasersPlus:StorePeerColor(peer,body,"flashlight",nil)
+		end
+		--]]
+	end
+	
+--[[
+	if message == LasersPlus.LuaNetID or message == LasersPlus.LegacyID then
+		local criminals_manager = managers.criminals
+		if not criminals_manager then
+			return
+		end
+		if message == LasersPlus.LegacyID and sender then 
+			lp_log("Sender with peerid [" .. sender .. "] is running legacy Networked Lasers!")
+			--should we... decode it?
+		elseif message == LasersPlus.LuaNetID and sender then 
+			if type(data) ~= "string" then
+				lp_log("Wrong data type received!")
+				--this shouldn't ever happen anyway, luanetworking only sends strings
+				return
+			end
+		end
+
+		local char = criminals_manager:character_name_by_peer_id(sender)
+		local col = data
+		if not data then
+			lp_log("Received LuaNetworking Data is nil!")
+			--again, this should never happen
+			return
+		end
+		if string.find(data, "l") then
+			if char and not LasersPlus.SavedTeamStrobes[char] then
+				col = LasersPlus:init_strobe(LasersPlus:StringToStrobeTable(data))
+				LasersPlus.SavedTeamStrobes[char] = col
+				lp_log("Saved a team strobe to the table")
+				return
+			end
+		elseif data ~= "nil" then
+			lp_log("Found networked color data.")
+			col = LuaNetworking:StringToColour(data) --LuaNetworking:StringToColour(data)
+			if not LasersPlus:FilterRedLasers(col) then
+				col = nil
+				lp_log("Blocked laser " .. tostring(data) .. " from character " .. tostring(char or "nil") .. "(contained too much red)")
+			end
+			return
+		end
+		
+		if char then
+			LasersPlus.SavedTeamColors[char] = col --todo save based on steamid64 instead of heister-character name
+			--i dunno though this mod is already pretty bulky, i might need to be careful that this mod doesn't impact performance too much
+			lp_log("Saved networked color for character " .. tostring(char)) --or cleared if col is nil
+			return
+		end
+	end
+--]]
+end)
+
+Hooks:Add("LocalizationManagerPostInit", "lasersplus_LocalizationManagerPostInit", function( loc )
+	if not BeardLib then 
+		loc:load_localization_file(LasersPlus._default_localization_path)
+	end
+end)
+
+function LasersPlus:serialize_laser_template(data)
+	local color_str = self.color_to_hex(data.color)
+	local alpha = data.alpha
+	local radius = data.radius
+	local strobe_enabled = data.strobe_enabled and 1 or 0
+	local strobe_str = self:StrobeToString(data.strobe_data)
+	return string.format("%s,%f,%f,%i,$%s",color_str,alpha,radius,strobe_enabled,strobe_str)
+end
+
+function LasersPlus:deserialize_laser_template(str)
+	if type(str) == "string" then
+		local a,b = string.find(str,"$")
+		if a then 
+			local ss_1 = string.sub(str,1,a-1) -- substring 1 (main params)
+			local ss_2 = string.sub(str,b+1,-1) -- substring 2 (strobe string)
+			
+			local params = string.split(ss_1,",")
+			local color_str = params[1]
+			local alpha = params[2] and tonumber(params[2])
+			local radius = params[3] and tonumber(params[3])
+			local strobe_enabled = params[4] == "1"
+			local strobe_str = ss_2
+			
+			if alpha and radius then
+				return {
+					color = color_str
+					alpha = alpha,
+					radius = radius,
+					strobe_enabled = strobe_enabled,
+					strobe_str = strobe_str
+				}
+			end
+		end
+	end
+end
+
+function LasersPlus:serialize_flash_template(data)
+	local color_str = self.color_to_hex(data.color)
+	local alpha = data.alpha
+	local range = data.range
+	local angle = data.angle
+	local strobe_enabled = data.strobe_enabled and 1 or 0
+	local strobe_str = self:StrobeToString(data.strobe_data)
+	return string.format("%s,%f,%i,%i,%i,$%s",color_str,alpha,range,angle,strobe_enabled,strobe_str)
+end
+
+function LasersPlus:deserialize_flash_template(str)
+	if type(str) == "string" then
+		local a,b = string.find(str,"$")
+		if a then 
+			local ss_1 = string.sub(str,1,a-1) -- substring 1 (main params)
+			local ss_2 = string.sub(str,b+1,-1) -- substring 2 (strobe string)
+			
+			local params = string.split(ss_1,",")
+			local color_str = params[1]
+			local alpha = params[2] and tonumber(params[2])
+			local range = params[3] and tonumber(params[3])
+			local angle = params[4] and tonumber(params[4])
+			local strobe_enabled = params[5] == "1"
+			local strobe_str = ss_2
+			
+			if alpha and range and angle then
+				return {
+					color = color_str
+					alpha = alpha,
+					range = range,
+					angle = angle,
+					strobe_enabled = strobe_enabled,
+					strobe_str = strobe_str
+				}
+			end
+		end
+	end
+end
+
 function LasersPlus:SyncTemplatesToPeers()
 	local laser_body,flash_body
 	
@@ -709,222 +984,8 @@ function LasersPlus:StorePeerColor(peer,data,type_id,unit)
 	end
 end
 
-function LasersPlus:IsGadgetNetworkSyncEnabled()
-	return self.settings.feature_enabled_gadget_network_sync
-end
 
-function LasersPlus:IsLaserRedFilterEnabled()
-	return self.settings.feature_enabled_laser_redfilter
-end
-
-function LasersPlus:IsMultiGadgetEnabled()
-	return self.settings.feature_enabled_gadget_multigadget
-end
-
-function LasersPlus:IsGadgetOverloadEnabled()
-	return self.settings.feature_enabled_gadget_overload
-end
-
--- combined getter for feature: default sight gadget, default laser/flashlight color
-function LasersPlus:IsQOLDefaultGadgetEnabled()
-	return self.settings.feature_enabled_qol_defaultgadget
-end
-
-function LasersPlus:GetSightTextureIndex()
-	return self.settings.qol_defaultgadget_sight_type
-end
-function LasersPlus:GetSightColorIndex()
-	return self.settings.qol_defaultgadget_sight_color
-end
-
-
-function LasersPlus:LoadSettings()
-	local file = io.open(self._settings_path, "r")
-	if file then
-		for k, v in pairs(json.decode(file:read("*all"))) do
-			self.settings[k] = v
-		end
-		file:close()
-	end
-end
-
-function LasersPlus:SaveSettings()
-	local file = io.open(self._settings_path,"w+")
-	if file then
-		file:write(json.encode(self.settings))
-		file:close()
-	end
-end
-
-
-function LasersPlus:serialize_laser_template(data)
-	local color_str = self.color_to_hex(data.color)
-	local alpha = data.alpha
-	local radius = data.radius
-	local strobe_enabled = data.strobe_enabled and 1 or 0
-	local strobe_str = self:StrobeToString(data.strobe_data)
-	return string.format("%s,%f,%f,%i,$%s",color_str,alpha,radius,strobe_enabled,strobe_str)
-end
-
-function LasersPlus:deserialize_laser_template(str)
-	if type(str) == "string" then
-		local a,b = string.find(str,"$")
-		if a then 
-			local ss_1 = string.sub(str,1,a-1) -- substring 1 (main params)
-			local ss_2 = string.sub(str,b+1,-1) -- substring 2 (strobe string)
-			
-			local params = string.split(ss_1,",")
-			local color_str = params[1]
-			local alpha = params[2] and tonumber(params[2])
-			local radius = params[3] and tonumber(params[3])
-			local strobe_enabled = params[4] == "1"
-			local strobe_str = ss_2
-			
-			if alpha and radius then
-				return {
-					color = color_str
-					alpha = alpha,
-					radius = radius,
-					strobe_enabled = strobe_enabled,
-					strobe_str = strobe_str
-				}
-			end
-		end
-	end
-end
-
-function LasersPlus:serialize_flash_template(data)
-	local color_str = self.color_to_hex(data.color)
-	local alpha = data.alpha
-	local range = data.range
-	local angle = data.angle
-	local strobe_enabled = data.strobe_enabled and 1 or 0
-	local strobe_str = self:StrobeToString(data.strobe_data)
-	return string.format("%s,%f,%i,%i,%i,$%s",color_str,alpha,range,angle,strobe_enabled,strobe_str)
-end
-
-function LasersPlus:deserialize_flash_template(str)
-	if type(str) == "string" then
-		local a,b = string.find(str,"$")
-		if a then 
-			local ss_1 = string.sub(str,1,a-1) -- substring 1 (main params)
-			local ss_2 = string.sub(str,b+1,-1) -- substring 2 (strobe string)
-			
-			local params = string.split(ss_1,",")
-			local color_str = params[1]
-			local alpha = params[2] and tonumber(params[2])
-			local range = params[3] and tonumber(params[3])
-			local angle = params[4] and tonumber(params[4])
-			local strobe_enabled = params[5] == "1"
-			local strobe_str = ss_2
-			
-			if alpha and range and angle then
-				return {
-					color = color_str
-					alpha = alpha,
-					range = range,
-					angle = angle,
-					strobe_enabled = strobe_enabled,
-					strobe_str = strobe_str
-				}
-			end
-		end
-	end
-end
-
--- *****    Receive Data    *****
-Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(sender, message, body)
-	local EVENT_IDS = LasersPlus.NETWORK_EVENT_IDS
-	
-	if message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_ALL then
-	
-		local peer = managers.network:session():peer(sender)
-		if peer then 
-			LasersPlus:StorePeerColor(peer,body,"combined",nil)
-		end
-		
-	--[[
-	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_LASER then
-		
-		local peer = managers.network:session():peer(sender)
-		if peer then 
-			LasersPlus:StorePeerColor(peer,body,"laser",nil)
-		end
-		
-	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH then
-		
-		local peer = managers.network:session():peer(sender)
-		if peer then 
-			LasersPlus:StorePeerColor(peer,body,"flashlight",nil)
-		end
-		--]]
-	end
-	
---[[
-	if message == LasersPlus.LuaNetID or message == LasersPlus.LegacyID then
-		local criminals_manager = managers.criminals
-		if not criminals_manager then
-			return
-		end
-		if message == LasersPlus.LegacyID and sender then 
-			lp_log("Sender with peerid [" .. sender .. "] is running legacy Networked Lasers!")
-			--should we... decode it?
-		elseif message == LasersPlus.LuaNetID and sender then 
-			if type(data) ~= "string" then
-				lp_log("Wrong data type received!")
-				--this shouldn't ever happen anyway, luanetworking only sends strings
-				return
-			end
-		end
-
-		local char = criminals_manager:character_name_by_peer_id(sender)
-		local col = data
-		if not data then
-			lp_log("Received LuaNetworking Data is nil!")
-			--again, this should never happen
-			return
-		end
-		if string.find(data, "l") then
-			if char and not LasersPlus.SavedTeamStrobes[char] then
-				col = LasersPlus:init_strobe(LasersPlus:StringToStrobeTable(data))
-				LasersPlus.SavedTeamStrobes[char] = col
-				lp_log("Saved a team strobe to the table")
-				return
-			end
-		elseif data ~= "nil" then
-			lp_log("Found networked color data.")
-			col = LuaNetworking:StringToColour(data) --LuaNetworking:StringToColour(data)
-			if not LasersPlus:FilterRedLasers(col) then
-				col = nil
-				lp_log("Blocked laser " .. tostring(data) .. " from character " .. tostring(char or "nil") .. "(contained too much red)")
-			end
-			return
-		end
-		
-		if char then
-			LasersPlus.SavedTeamColors[char] = col --todo save based on steamid64 instead of heister-character name
-			--i dunno though this mod is already pretty bulky, i might need to be careful that this mod doesn't impact performance too much
-			lp_log("Saved networked color for character " .. tostring(char)) --or cleared if col is nil
-			return
-		end
-	end
---]]
-end)
-
-Hooks:Add("LocalizationManagerPostInit", "lasersplus_LocalizationManagerPostInit", function( loc )
-	if not BeardLib then 
-		loc:load_localization_file(LasersPlus._default_localization_path)
-	end
-end)
-
-
-
-Hooks:Add("MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(menu_manager)
-	LasersPlus:LoadSettings()
-	LasersPlus:SetupAllGadgetTemplates()
-end)
-
-
+-- ===================================== Menu ==========================================
 
 Hooks:Add("OnLasersPlusSettingChanged_Laser","LasersPlus_NetworkRefreshSyncGadgetsLaser",function(template_data)
 	LasersPlus._cached_template_string_laser = nil
@@ -935,63 +996,11 @@ Hooks:Add("OnLasersPlusSettingChanged_Flashlight","LasersPlus_NetworkRefreshSync
 	LasersPlus:SyncTemplatesToPeers()
 end)
 
+Hooks:Add("MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(menu_manager)
+	LasersPlus:LoadSettings()
+	LasersPlus:SetupAllGadgetTemplates()
+end)
 
-
---format a strobe into a string ready to sync to other players
-function LasersPlus:StrobeToString(strobe_data)
-	local str = self.STROBE_NETWORKING_STRING_TEMPLATE
-	str = string.gsub(str,"$DURATION",string.format("%0.4f",strobe_data.duration))
-	local tbl = {}
-	for i,color_data in pairs(strobe_data.colors) do 
-		local hex = self.color_to_hex(color_data.color)
-		local position = string.format("%0.4f",color_data.position)
-		tbl[i] = position .. "," .. hex
-		color_str = color_str 
-	end
-	local color_str = table.concat(tbl,";")
-	str = string.gsub(str,"$COLORS",color_str)
-	return str
-end
-
-function LasersPlus.color_to_hex(color)
-	return string.format("%02x%02x%02x", math.min(math.max(color.r * 255,0),0xff),math.min(math.max(color.g * 255,0),0xff),math.min(math.max(color.b * 255,0),0xff))
-end
-
---takes a string from lua networking (sent from another LasersPlus user) and parses it into an unprocessed strobe
---name is based on the peer id of the sender, so you can only store one at a time
-function LasersPlus:StringToStrobe(s,name)
-	local FALLBACK_DURATION = 4
-	
-	local d1 = string.split(string.match(s,"%d.*"),":")
-	local duration = d1[1]
-	
-	duration = duration and tonumber(duration) or FALLBACK_DURATION
-	
-	local d2 = d1[2]
-	local d3 = string.split(d2,";")
-	local colors = {}
-	for i,d4 in pairs(d3) do 
-		local color_data = string.split(d4,",")
-		local position = color_data[1]
-		position = position and tonumber(position) or (i / #d3)
-		local new_color = {
-			position = position,
-			color = Color(color_data[2])
-		}
-		colors[#colors+1] = new_color
-	end
-	
-	--if your strobe doesn't have at least two colors then why do you need a strobe
-	if #colors < 2 then 
-		return false
-	end
-	
-	return {
-		name = name,
-		duration = duration,
-		colors = colors
-	}
-end
 
 
 -- check legacy here
