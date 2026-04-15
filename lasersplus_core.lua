@@ -27,9 +27,6 @@ LasersPlus.default_settings = {
 --* 3: (only for player/teammate lasers/flashlights) the laser or flashlight is colored according to which player color they are-
 --	eg. player 1 is green, player 2 is blue, player 3 is red, player 4 is yellow
 	
-	feature_enabled_master = true,
-	feature_enabled_laser_strobe = true,
-	feature_enabled_flash_strobe = true,
 	feature_enabled_laser_network_sync = true,
 	feature_enabled_flash_network_sync = true,
 	
@@ -44,7 +41,7 @@ LasersPlus.default_settings = {
 	user_laser_alpha = 0.7,
 	user_laser_display_mode = 2,
 	user_laser_radius = 0.25,
-	user_laser_strobe_enabled = true,
+	user_laser_strobe_enabled = false,
 	user_laser_strobe_string = "#3:0,ff0000;0.33,00ff00;0.66,0000ff",
 	
 	user_flash_color = "dbddff",
@@ -173,11 +170,6 @@ LasersPlus.LASER_THEMES_LOOKUP = {
 	turret_module_rearming = "turretrld",
 	turret_module_mad = "turretmad"
 }
-
---Enables the whole mod's effects
-function LasersPlus:IsEnabled()
-	return self.settings.enabled_mod_master
-end
 
 function LasersPlus:GetGadgetTemplate(gadget_type,user_type)
 	return self._gadget_templates[gadget_type][user_type]
@@ -377,24 +369,21 @@ function LasersPlus:convert_save_data(settings_from_file)
 	-- ====================================
 	-- main features/toggles
 	-- ====================================
-				
-					-- master enable
-				new_settings.feature_enabled_master 					= apply_bool_with_fallback(old.enabled_mod_master,new_settings.feature_enabled_master)
 					
 					-- laser strobes (all)
-				new_settings.feature_enabled_laser_strobe				= apply_bool_with_fallback(old.enabled_laser_strobes_master,new_settings.feature_enabled_laser_strobe)
+				new_settings.feature_enabled_laser_strobe				= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_laser_strobes_master,new_settings.feature_enabled_laser_strobe)
 					
 					-- flashlight strobes (all)
-				new_settings.feature_enabled_flash_strobe				= apply_bool_with_fallback(old.enabled_flashlight_strobes_master,new_settings.feature_enabled_flash_strobe)
+				new_settings.feature_enabled_flash_strobe				= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_flashlight_strobes_master,new_settings.feature_enabled_flash_strobe)
 					
 					-- peer laser syncing
-				new_settings.feature_enabled_laser_network_sync			= apply_bool_with_fallback(old.enabled_networking,new_settings.feature_enabled_laser_network_sync)
+				new_settings.feature_enabled_laser_network_sync			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_networking,new_settings.feature_enabled_laser_network_sync)
 					
 					-- peer flashlight syncing
-				new_settings.feature_enabled_flash_network_sync			= apply_bool_with_fallback(old.enabled_networking,new_settings.feature_enabled_flash_network_sync)
+				new_settings.feature_enabled_flash_network_sync			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_networking,new_settings.feature_enabled_flash_network_sync)
 				
 					-- peer laser filtering ("No Red [Player] Lasers" integration)
-				new_settings.feature_enabled_laser_redfilter			= apply_bool_with_fallback(old.enabled_redfilter,new_settings.feature_enabled_laser_redfilter)
+				new_settings.feature_enabled_laser_redfilter			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_redfilter,new_settings.feature_enabled_laser_redfilter)
 				
 					-- general blackmarket qol changes 
 				if old.enabled_blackmarket_qol then
@@ -405,12 +394,12 @@ function LasersPlus:convert_save_data(settings_from_file)
 					-- because the enabled_blackmarket_qol flag is supposed to be a category that encompasses multiple tweaks
 				end
 				
-				new_settings.feature_enabled_gadget_multigadget			= apply_bool_with_fallback(old.enabled_multigadget,new_settings.feature_enabled_gadget_multigadget)
+				new_settings.feature_enabled_gadget_multigadget			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_multigadget,new_settings.feature_enabled_gadget_multigadget)
 				
-				new_settings.feature_enabled_gadget_overload			= apply_bool_with_fallback(old.enabled_gadget_overload,new_settings.feature_enabled_gadget_overload)
+				new_settings.feature_enabled_gadget_overload			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_gadget_overload,new_settings.feature_enabled_gadget_overload)
 				
-				new_settings.qol_defaultgadget_sight_color				= apply_bool_with_fallback(old.sight_color,new_settings.blackmarket_qol_defaultgadget_sight_color)
-				new_settings.qol_defaultgadget_sight_type				= apply_bool_with_fallback(old.sight_type,new_settings.blackmarket_qol_defaultgadget_sight_type)
+				new_settings.qol_defaultgadget_sight_color				= apply_bool_with_fallback(old.enabled_mod_master and old.sight_color,new_settings.blackmarket_qol_defaultgadget_sight_color)
+				new_settings.qol_defaultgadget_sight_type				= apply_bool_with_fallback(old.enabled_mod_master and old.sight_type,new_settings.blackmarket_qol_defaultgadget_sight_type)
 				
 				
 	-- ====================================
@@ -423,6 +412,7 @@ function LasersPlus:convert_save_data(settings_from_file)
 				-- ------------------------------------------
 				if old.own_laser_display_mode then
 					local value = old.own_laser_display_mode
+					
 					if value == 1 then
 						-- hidden
 						new_settings.user_laser_display_mode = value
@@ -434,9 +424,9 @@ function LasersPlus:convert_save_data(settings_from_file)
 						new_settings.user_laser_display_mode = value
 					elseif value == 4 then
 						new_settings.user_laser_display_mode = 3 -- use "custom", enable strobe
-						new_settings.user_laser_strobe_enabled = true
 					end
 				end
+				new_settings.user_laser_strobe_enabled					= apply_bool_with_fallback(old.enabled_laser_strobes_master and old.own_laser_strobe_enabled,new_settings.user_laser_strobe_enabled)
 				new_settings.user_laser_color							= apply_color_with_fallback(old.own_laser_red,old.own_laser_green,old.own_laser_blue, new_settings.user_laser_color)
 				new_settings.user_laser_alpha							= apply_float_with_fallback(old.own_laser_alpha, new_settings.user_laser_alpha)
 				
@@ -454,9 +444,9 @@ function LasersPlus:convert_save_data(settings_from_file)
 						new_settings.user_flash_display_mode = value
 					elseif value == 4 then
 						new_settings.user_flash_display_mode = 3 -- use "custom", enable strobe
-						new_settings.user_flash_strobe_enabled = true
 					end
 				end
+				new_settings.user_flash_strobe_enabled					= apply_bool_with_fallback(old.own_flashlight_strobe_enabled,new_settings.user_flash_strobe_enabled)
 				new_settings.user_flash_color							= apply_color_with_fallback(old.own_flash_red,old.own_flash_green,old.own_flash_blue, new_settings.user_flash_color)
 				new_settings.user_flash_alpha							= apply_float_with_fallback(old.own_flash_alpha, new_settings.user_flash_alpha)
 				
@@ -479,6 +469,8 @@ function LasersPlus:convert_save_data(settings_from_file)
 						new_settings.team_laser_display_mode = value
 					end
 				end
+				
+				new_settings.team_laser_strobe_enabled					= apply_bool_with_fallback(old.team_laser_strobe_enabled,new_settings.team_laser_strobe_enabled)
 				new_settings.team_laser_color							= apply_color_with_fallback(old.team_laser_red,old.team_laser_green,old.team_laser_blue, new_settings.team_laser_color)
 				new_settings.team_laser_alpha							= apply_float_with_fallback(old.team_laser_alpha, new_settings.team_laser_alpha)
 				
@@ -590,6 +582,7 @@ function LasersPlus:convert_save_data(settings_from_file)
 				new_settings.world_laser_color							= apply_color_with_fallback(old.wl_red,old.wl_green,old.wl_blue, new_settings.world_laser_color)
 				new_settings.world_laser_alpha							= apply_float_with_fallback(old.wl_alpha, new_settings.world_laser_alpha)
 			end
+			
 			return new_settings
 		else
 			log("ERROR: Unknown LasersPlus version",self.LASERSPLUS_SAVEFILE_VERSION)
@@ -598,6 +591,40 @@ function LasersPlus:convert_save_data(settings_from_file)
 		
 	end
 end
+
+
+function LasersPlus:IsLaserNetworkEnabled()
+	return self.settings.feature_enabled_laser_network_sync
+end
+
+function LasersPlus:IsFlashlightNetworkEnabled()
+	return self.settings.feature_enabled_flash_network_sync
+end
+
+function LasersPlus:IsLaserRedFilterEnabled()
+	return self.settings.feature_enabled_laser_redfilter
+end
+
+function LasersPlus:IsMultiGadgetEnabled()
+	return self.settings.feature_enabled_gadget_multigadget
+end
+
+function LasersPlus:IsGadgetOverloadEnabled()
+	return self.settings.feature_enabled_gadget_overload
+end
+
+-- combined getter for feature: default sight gadget, default laser/flashlight color
+function LasersPlus:IsQOLDefaultGadgetEnabled()
+	return self.settings.feature_enabled_qol_defaultgadget
+end
+
+function LasersPlus:GetSightTextureIndex()
+	return self.settings.qol_defaultgadget_sight_type
+end
+function LasersPlus:GetSightColorIndex()
+	return self.settings.qol_defaultgadget_sight_color
+end
+
 
 function LasersPlus:LoadSettings()
 	local file = io.open(self._settings_path, "r")
