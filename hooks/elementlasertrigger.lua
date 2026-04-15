@@ -78,7 +78,7 @@ Hooks:OverrideFunction(ElementLaserTrigger,"update_laser_draw",function(self,t,d
 		if connection.enabled then
 			-- only change is here,
 			-- to allow changing the brush size
-			self._brush:cylinder(connection.from.pos, connection.to.pos, 0.5)
+			self._brush:cylinder(connection.from.pos, connection.to.pos, self._lp_data.radius)
 		end
 	end
 

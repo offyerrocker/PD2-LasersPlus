@@ -60,7 +60,7 @@ LasersPlus.default_settings = {
 	team_laser_display_mode = 1,
 	team_laser_radius = 0.5,
 	team_laser_strobe_enabled = false,
-	team_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	team_laser_strobe_string = "#0.5:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
 	
 	team_flash_color = "ffffff",
 	team_flash_alpha = 1,
@@ -75,7 +75,7 @@ LasersPlus.default_settings = {
 	enemy_laser_display_mode = 2,
 	enemy_laser_radius = 0.5,
 	enemy_laser_strobe_enabled = true,
-	enemy_laser_strobe_string = "#1:0,ff0000;0.5,ff4700",
+	enemy_laser_strobe_string = "#0.5:0,ff0000;0.5,ff4700",
 	
 	enemy_flash_color = "ffffff",
 	enemy_flash_alpha = 1,
@@ -98,7 +98,7 @@ LasersPlus.default_settings = {
 	turretatt_laser_mode = 2,
 	turretatt_laser_radius = 0.5,
 	turretatt_laser_strobe_enabled = true,
-	turretatt_laser_strobe_string = "#0.5:0,ff0000;0.5,ff1f00",
+	turretatt_laser_strobe_string = "#0.5:0,ff0000;0.5,ff2853",
 	
 	turretrld_laser_color = "faff00",
 	turretrld_laser_alpha = 0.3,
