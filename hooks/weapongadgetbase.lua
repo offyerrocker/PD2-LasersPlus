@@ -8,16 +8,24 @@ if RequiredScript == "lib/units/weapons/weapongadgetbase" then
 
 	-- custom func
 	-- set the type of unit using this gadget (player, teammate heister, or sniper);
-	-- other types (sentry and world) do not use gadgets at all, so that is handled elsewhere 
-	function WeaponGadgetBase:set_lasersplus_type(user_type)
+	-- world does not use gadgets at all, so that is handled elsewhere 
+	-- sentries do, but they have their user_type set externally from the sentry weapon base,
+	-- according to the state/theme of the sentry
+	function WeaponGadgetBase:set_lasersplus_type(user_type,peer_id)
 		self:_set_lasersplus_type(user_type)
-	--	self._lp_strobe = LasersPlus:GetStrobeData(user_type)
+		if peer_id and user_type == "team" then 
+			self:set_lasersplus_peerid(peer_id)
+		end
 	end
 
 	function WeaponGadgetBase:_set_lasersplus_type(user_type)
 		self._lp_user_type = user_type
 	end
-
+	
+	function WeaponGadgetBase:set_lasersplus_peerid(peer_id)
+		self._lp_peerid = peer_id
+	end
+	
 
 	function WeaponGadgetBase:setup_lp_strobe_data(template_data)
 		local strobe_count = 0
@@ -64,27 +72,29 @@ elseif RequiredScript == "lib/units/weapons/weaponlaser" then
 
 	function WeaponLaser:set_lasersplus_type(user_type,...)
 		WeaponLaser.super.set_lasersplus_type(self,user_type,...)
-		local function f_setup(template_data)
-			if alive(self._light) then
-				if template_data and template_data.mode ~= 1 then
-					if template_data.color then
-						if template_data.alpha then
-							self:set_color(template_data.color:with_alpha(template_data.alpha))
-						else
-							self:set_color(template_data.color)
+		local function f_setup(template_data,_user_type,peer_id)
+			if (_user_type == true or _user_type == self._lp_user_type) and (_user_type ~= "team" or self._is_npc or peer_id == true or peer_id == self._lp_peerid) then
+				if alive(self._light) then
+					if template_data and template_data.mode ~= 1 then
+						if template_data.color then
+							if template_data.alpha then
+								self:set_color(template_data.color:with_alpha(template_data.alpha))
+							else
+								self:set_color(template_data.color)
+							end
 						end
+						
+						self:setup_lp_strobe_data(template_data)
+					else
+						self._lp_data = nil
 					end
-					
-					self:setup_lp_strobe_data(template_data)
-				else
-					self._lp_data = nil
 				end
 			end
 		end
 		
 		Hooks:Add("OnLasersPlusSettingChanged_Laser",self._lp_key,f_setup)
 		local template_data = LasersPlus:GetGadgetTemplate(self.GADGET_TYPE,user_type)
-		f_setup(template_data)
+		f_setup(template_data,true,true)
 	end
 	
 elseif RequiredScript == "lib/units/weapons/weaponflashlight" then
@@ -106,38 +116,40 @@ elseif RequiredScript == "lib/units/weapons/weaponflashlight" then
 
 	function WeaponFlashLight:set_lasersplus_type(user_type,...)
 		WeaponFlashLight.super.set_lasersplus_type(self,user_type,...)
-		local function f_setup(template_data)
-			if alive(self._light) then
-				if template_data and template_data.mode ~= 1 then
-			
-					if template_data.glow_alpha then
-						--self._lp_glow_alpha = template_data.glow_alpha
-					end
-					
-					if template_data.angle then 
-						self._light:set_spot_angle_end(template_data.angle)
-					end
-					if template_data.range then
-						self._light:set_far_range(template_data.range)
-					end
-					
-					if template_data.color and template_data.light_alpha then 
-						self:set_color(template_data.color:with_alpha(template_data.light_alpha))
+		local function f_setup(template_data,_user_type,peer_id)
+			if (_user_type == true or _user_type == self._lp_user_type) and (_user_type ~= "team" or self._is_npc or peer_id == true or peer_id == self._lp_peerid) then
+				if alive(self._light) then
+					if template_data and template_data.mode ~= 1 then
+				
+						if template_data.glow_alpha then
+							--self._lp_glow_alpha = template_data.glow_alpha
+						end
+						
+						if template_data.angle then 
+							self._light:set_spot_angle_end(template_data.angle)
+						end
+						if template_data.range then
+							self._light:set_far_range(template_data.range)
+						end
+						
+						if template_data.color and template_data.light_alpha then 
+							self:set_color(template_data.color:with_alpha(template_data.light_alpha))
+						else
+							self:set_color(template_data.color)
+						end
+						
+						-- self._light:set_multiplier(self._current_light_multiplier)
+						self:setup_lp_strobe_data(template_data)
 					else
-						self:set_color(template_data.color)
+						self._lp_data = nil
 					end
-					
-					-- self._light:set_multiplier(self._current_light_multiplier)
-					self:setup_lp_strobe_data(template_data)
-				else
-					self._lp_data = nil
 				end
 			end
 		end
 		
 		Hooks:Add("OnLasersPlusSettingChanged_Flashlight",self._lp_key,f_setup)
 		local template_data = LasersPlus:GetGadgetTemplate(self.GADGET_TYPE,user_type)
-		f_setup(template_data)
+		f_setup(template_data,true,true)
 	end
 
 end

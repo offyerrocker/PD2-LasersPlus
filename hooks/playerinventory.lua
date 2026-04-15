@@ -11,7 +11,7 @@ if RequiredScript == "lib/units/beings/player/playerinventory" then
 		if self._lp_unit_type and weap_base and weap_base.set_lp_user_type then
 			-- have to let the info propagate naturally as the load process progresses
 	--		Print("Add unit!",self._lp_unit_type,new_unit)
-			weap_base:set_lp_user_type(self._lp_unit_type)
+			weap_base:set_lp_user_type(self._lp_unit_type,managers.criminals:character_peer_id_by_unit(self._unit))
 		end
 	end)
 

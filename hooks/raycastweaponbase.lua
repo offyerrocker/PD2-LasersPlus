@@ -4,15 +4,15 @@
 if RequiredScript == "lib/units/weapons/raycastweaponbase" then
 
 	-- custom func
-	function RaycastWeaponBase:set_lp_user_type(user_type)
+	function RaycastWeaponBase:set_lp_user_type(user_type,peer_id)
 		self._lp_unit_user_type = user_type
 		if self._assembly_complete then
-			self:set_gadget_lp_user_type(user_type)
+			self:set_gadget_lp_user_type(user_type,peer_id)
 			--Print("Assembly complete",user_type)
 		end
 	end
 
-	function RaycastWeaponBase:set_gadget_lp_user_type(user_type)
+	function RaycastWeaponBase:set_gadget_lp_user_type(user_type,peer_id)
 	--	Print("set_gadget_lp_user_type() start",user_type)
 		if user_type and self._parts then
 	--		Print("set_gadget_lp_user_type() user type exists",user_type)
@@ -23,15 +23,13 @@ if RequiredScript == "lib/units/weapons/raycastweaponbase" then
 	--			Print("set_gadget_lp_user_type() loop",i,user_type,gadget_unit,gadget_base,gadget_type)
 				if gadget_type == "flashlight" or gadget_type == "laser" then
 	--				Print("set_gadget_lp_user_type()",user_type,i)
-					gadget_base:set_lasersplus_type(user_type)
+					gadget_base:set_lasersplus_type(user_type,peer_id)
 				end
 			end
 		end
 	end
 	
 elseif RequiredScript == "lib/units/weapons/newraycastweaponbase" then
-	
-	
 	
 	Hooks:PostHook(NewRaycastWeaponBase,"clbk_assembly_complete","lasersplus_onweaponassemblycomplete",function(self,clbk,parts,blueprint)
 		self._lp_unit_user_type = self._lp_unit_user_type or "user" -- assume that any weapon using this class is the local player

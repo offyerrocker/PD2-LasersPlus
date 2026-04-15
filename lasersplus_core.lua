@@ -12,9 +12,9 @@ LasersPlus._settings_path = LasersPlus._save_directory .. "lasersplus_settings.j
 LasersPlus.STROBE_NETWORKING_STRING_TEMPLATE = "$DURATION:$COLORS"
 
 LasersPlus.NETWORK_EVENT_IDS = {
-	LASERSPLUS_SYNC_GADGET_ALL	 = "LasersPlus_sync_gadgets",
-	LASERSPLUS_SYNC_GADGET_LASER = "LasersPlus_sync_laser",
-	LASERSPLUS_SYNC_GADGET_FLASH = "LasersPlus_sync_flash"
+	LASERSPLUS_SYNC_GADGET_ALL	 = "LasersPlus_sync_gadgets"
+--	,LASERSPLUS_SYNC_GADGET_LASER = "LasersPlus_sync_laser",
+--	LASERSPLUS_SYNC_GADGET_FLASH = "LasersPlus_sync_flash"
 }
 
 LasersPlus.default_settings = {
@@ -27,8 +27,7 @@ LasersPlus.default_settings = {
 --* 3: (only for player/teammate lasers/flashlights) the laser or flashlight is colored according to which player color they are-
 --	eg. player 1 is green, player 2 is blue, player 3 is red, player 4 is yellow
 	
-	feature_enabled_laser_network_sync = true,
-	feature_enabled_flash_network_sync = true,
+	feature_enabled_gadget_network_sync = true,
 	
 	feature_enabled_laser_redfilter = true,
 	feature_enabled_qol_defaultgadget = true,
@@ -116,12 +115,16 @@ LasersPlus.settings = table.deep_map_copy(LasersPlus.default_settings)
 
 -- can be changed via the ini file
 LasersPlus.config = {
+	redfilter_threshold = 0.66,
 	peer_color_1 = "0x30ed4f",
 	peer_color_2 = "0x334cff",
 	peer_color_3 = "0xff2659",
 	peer_color_4 = "0xd88c19",
 	peer_color_5 = "0x00ffff"
 }
+
+LasersPlus._cached_template_string_laser = LasersPlus._cached_template_string_laser or nil
+LasersPlus._cached_template_string_flash = LasersPlus._cached_template_string_flash or nil
 
 -- misnomer as world and sentry lasers aren't literally set up with gadgets,
 -- and in fact don't even have flashlights,
@@ -376,11 +379,8 @@ function LasersPlus:convert_save_data(settings_from_file)
 					-- flashlight strobes (all)
 				new_settings.feature_enabled_flash_strobe				= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_flashlight_strobes_master,new_settings.feature_enabled_flash_strobe)
 					
-					-- peer laser syncing
-				new_settings.feature_enabled_laser_network_sync			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_networking,new_settings.feature_enabled_laser_network_sync)
-					
-					-- peer flashlight syncing
-				new_settings.feature_enabled_flash_network_sync			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_networking,new_settings.feature_enabled_flash_network_sync)
+					-- peer laser/flashlight syncing
+				new_settings.feature_enabled_gadget_network_sync		= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_networking,new_settings.feature_enabled_gadget_network_sync)
 				
 					-- peer laser filtering ("No Red [Player] Lasers" integration)
 				new_settings.feature_enabled_laser_redfilter			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_redfilter,new_settings.feature_enabled_laser_redfilter)
@@ -592,13 +592,125 @@ function LasersPlus:convert_save_data(settings_from_file)
 	end
 end
 
-
-function LasersPlus:IsLaserNetworkEnabled()
-	return self.settings.feature_enabled_laser_network_sync
+function LasersPlus:SyncTemplatesToPeers()
+	local laser_body,flash_body
+	
+	if self._cached_template_string_laser then
+		laser_body = self._cached_template_string_laser
+	else
+		local template_data = self:GetGadgetTemplate("laser","user")
+		if template_data and template_data.mode ~= 1 then
+			laser_body = self:serialize_flash_template(template_data)
+		else
+			laser_body = "0"
+		end
+		self._cached_template_string_laser = laser_body
+	end
+	
+	if self._cached_template_string_flash then
+		flash_body = self._cached_template_string_flash
+	else
+		local template_data = self:GetGadgetTemplate("flashlight","user")
+		if template_data and template_data.mode ~= 1 then
+			flash_body = self:serialize_laser_template(template_data)
+		else
+			flash_body = "0"
+		end
+		self._cached_template_string_flash = flash_body
+	end
+	
+	if managers.network and managers.network:session() then
+		local body = laser_body .. "&" .. flash_body
+		
+		LuaNetworking:SendToPeers(self.NETWORK_EVENT_IDS.LASERSPLUS_SYNC_GADGET_ALL,body)
+	end
+	--LuaNetworking:SendToPeers(self.NETWORK_EVENT_IDS.LASERSPLUS_SYNC_GADGET_LASER,laser_body)
+	--LuaNetworking:SendToPeers(self.NETWORK_EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH,flash_body)
 end
 
-function LasersPlus:IsFlashlightNetworkEnabled()
-	return self.settings.feature_enabled_flash_network_sync
+function LasersPlus:StorePeerColor(peer,data,type_id,unit)
+	local uid = peer:user_id()
+	local stored_colors = LasersPlus._gadget_colors_by_user[uid]
+	if not stored_colors then 
+		stored_colors = {
+			gadget = {}, -- manual lookup to actual gadget unit [by address from unit key]
+			sync_string = nil, -- str; compared on receive from other players to prevent redundant parsing; NOTE: stored whether valid or not
+			laser_color = nil, -- str
+			laser_strobe = nil, -- str
+			laser_alpha = nil, -- float [0-1]
+			flash_color = nil, -- str
+			flash_strobe = nil, -- str
+			flash_alpha = nil -- float [0-1]
+		}
+		LasersPlus._gadget_colors_by_user[uid] = stored_colors
+	end
+	
+	if type_id == "vanilla" then
+		local gadget_base = unit and alive(unit) and unit:base()
+		if gadget_base then
+			local key = string.match(tostring(gadget_base),"0.*")
+			stored_colors.gadget[key] = {
+				color = string.format("%02x%02x%02x",data.r,data.g,data.b),
+				alpha = math.max(red,green,blue)/255
+			}
+		end
+	elseif type_id == "combined" then
+		if stored_colors.sync_string ~= data then
+			stored_colors.sync_string = data
+			local a,b = string.find(data,"@")
+			if a then
+				
+				local laser_ss = string.sub(data,1,a-1)
+				if laser_ss and laser_ss ~= "0" and laser_ss ~= "" then
+					local template_data = LasersPlus:deserialize_laser_template(laser_ss)
+					if template_data and type(template_data) == "table" then
+						stored_colors.laser_template = template_data
+					end
+				else
+					stored_colors.laser_template = nil
+				end
+				
+				local flash_ss = string.sub(data,b+1,-1)
+				if flash_ss and flash_ss ~= "0" and flash_ss ~= "" then
+					local template_data = LasersPlus:deserialize_flash_template(flash_ss)
+					if template_data and type(template_data) == "table" then
+						stored_colors.flash_template = template_data
+					end
+				else
+					stored_colors.flash_template = nil
+				end
+				
+			end
+		end
+	--[[
+	elseif type_id == "laser" then -- lasersplus synced color
+		
+		if stored_colors.sync_string ~= data then
+			local template_data = LasersPlus:deserialize_laser_template(data)
+			if template_data and type(template_data) == "table" then
+				stored_colors.laser_template = template_data
+			end
+			stored_colors.sync_string = data
+		end
+		
+	elseif type_id == "flashlight" then -- lasersplus synced flashlight
+		if stored_colors.sync_string ~= data then
+			local template_data = LasersPlus:deserialize_flash_template(data)
+			if template_data and type(template_data) == "table" then
+				stored_colors.flash_template = template_data
+			end
+			stored_colors.sync_string = data
+		end
+		--stored_colors.flash_color = string.format("%02x%02x%02x",data.r or 1,data.g or 1,data.b or 1)
+		--stored_colors.flash_color = data.color
+		--stored_colors.flash_alpha = data.alpha
+		--stored_colors.flash_strobe = data.strobe
+--]]
+	end
+end
+
+function LasersPlus:IsGadgetNetworkSyncEnabled()
+	return self.settings.feature_enabled_gadget_network_sync
 end
 
 function LasersPlus:IsLaserRedFilterEnabled()
@@ -645,21 +757,107 @@ function LasersPlus:SaveSettings()
 end
 
 
+function LasersPlus:serialize_laser_template(data)
+	local color_str = self.color_to_hex(data.color)
+	local alpha = data.alpha
+	local radius = data.radius
+	local strobe_enabled = data.strobe_enabled and 1 or 0
+	local strobe_str = self:StrobeToString(data.strobe_data)
+	return string.format("%s,%f,%f,%i,$%s",color_str,alpha,radius,strobe_enabled,strobe_str)
+end
+
+function LasersPlus:deserialize_laser_template(str)
+	if type(str) == "string" then
+		local a,b = string.find(str,"$")
+		if a then 
+			local ss_1 = string.sub(str,1,a-1) -- substring 1 (main params)
+			local ss_2 = string.sub(str,b+1,-1) -- substring 2 (strobe string)
+			
+			local params = string.split(ss_1,",")
+			local color_str = params[1]
+			local alpha = params[2] and tonumber(params[2])
+			local radius = params[3] and tonumber(params[3])
+			local strobe_enabled = params[4] == "1"
+			local strobe_str = ss_2
+			
+			if alpha and radius then
+				return {
+					color = color_str
+					alpha = alpha,
+					radius = radius,
+					strobe_enabled = strobe_enabled,
+					strobe_str = strobe_str
+				}
+			end
+		end
+	end
+end
+
+function LasersPlus:serialize_flash_template(data)
+	local color_str = self.color_to_hex(data.color)
+	local alpha = data.alpha
+	local range = data.range
+	local angle = data.angle
+	local strobe_enabled = data.strobe_enabled and 1 or 0
+	local strobe_str = self:StrobeToString(data.strobe_data)
+	return string.format("%s,%f,%i,%i,%i,$%s",color_str,alpha,range,angle,strobe_enabled,strobe_str)
+end
+
+function LasersPlus:deserialize_flash_template(str)
+	if type(str) == "string" then
+		local a,b = string.find(str,"$")
+		if a then 
+			local ss_1 = string.sub(str,1,a-1) -- substring 1 (main params)
+			local ss_2 = string.sub(str,b+1,-1) -- substring 2 (strobe string)
+			
+			local params = string.split(ss_1,",")
+			local color_str = params[1]
+			local alpha = params[2] and tonumber(params[2])
+			local range = params[3] and tonumber(params[3])
+			local angle = params[4] and tonumber(params[4])
+			local strobe_enabled = params[5] == "1"
+			local strobe_str = ss_2
+			
+			if alpha and range and angle then
+				return {
+					color = color_str
+					alpha = alpha,
+					range = range,
+					angle = angle,
+					strobe_enabled = strobe_enabled,
+					strobe_str = strobe_str
+				}
+			end
+		end
+	end
+end
+
 -- *****    Receive Data    *****
-Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(sender, message, data)
+Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(sender, message, body)
 	local EVENT_IDS = LasersPlus.NETWORK_EVENT_IDS
 	
 	if message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_ALL then
-	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_LASER then
-		--[[
+	
 		local peer = managers.network:session():peer(sender)
 		if peer then 
-			local user_id = peer:user_id()
-			self._gadget_colors_by_user[user_id] = self._gadget_colors_by_user[user_id] or {}
+			LasersPlus:StorePeerColor(peer,body,"combined",nil)
+		end
+		
+	--[[
+	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_LASER then
+		
+		local peer = managers.network:session():peer(sender)
+		if peer then 
+			LasersPlus:StorePeerColor(peer,body,"laser",nil)
+		end
+		
+	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH then
+		
+		local peer = managers.network:session():peer(sender)
+		if peer then 
+			LasersPlus:StorePeerColor(peer,body,"flashlight",nil)
 		end
 		--]]
-		--self._gadget_colors_by_user[user_id].laser
-	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH then
 	end
 	
 --[[
@@ -727,6 +925,15 @@ Hooks:Add("MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(
 end)
 
 
+
+Hooks:Add("OnLasersPlusSettingChanged_Laser","LasersPlus_NetworkRefreshSyncGadgetsLaser",function(template_data)
+	LasersPlus._cached_template_string_laser = nil
+	LasersPlus:SyncTemplatesToPeers()
+end)
+Hooks:Add("OnLasersPlusSettingChanged_Flashlight","LasersPlus_NetworkRefreshSyncGadgetsFlashlight",function(template_data)
+	LasersPlus._cached_template_string_flash = nil
+	LasersPlus:SyncTemplatesToPeers()
+end)
 
 
 
