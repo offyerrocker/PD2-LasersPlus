@@ -32,7 +32,7 @@ LasersPlus.default_settings = {
 	user_laser_display_mode = 2,
 	user_laser_radius = 0.25,
 	user_laser_strobe_enabled = true,
-	user_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	user_laser_strobe_string = "#3:0,ff0000;0.33,00ff00;0.66,0000ff",
 	
 	user_flash_color = "dbddff",
 	user_flash_alpha = 1,
@@ -61,7 +61,7 @@ LasersPlus.default_settings = {
 	enemy_laser_display_mode = 2,
 	enemy_laser_radius = 0.5,
 	enemy_laser_strobe_enabled = true,
-	enemy_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
+	enemy_laser_strobe_string = "#1:0,ff0000;0.5,ff4700",
 	
 	enemy_flash_alpha = 1,
 	enemy_flash_range = 1000,
@@ -76,15 +76,28 @@ LasersPlus.default_settings = {
 	world_laser_strobe_enabled = true,
 	world_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
 	
-	turret_att_laser_color = "ff0000",
-	turret_mad_laser_color = "00ffff",
-	turret_rld_laser_color = "ffff00",
-	turret_laser_alpha = 0.9,
-	turret_laser_display_mode = 1,
-	turret_laser_radius = 0.5,
-	turret_attack_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
-	turret_mad_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
-	turret_reload_laser_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff"
+	
+	turretatt_laser_color = "ff0000",
+	turretatt_laser_alpha = 0.7,
+	turretatt_laser_mode = 2,
+	turretatt_laser_radius = 0.5,
+	turretatt_laser_strobe_enabled = true,
+	turretatt_laser_strobe_string = "#0.5:0,ff0000;0.5,ff1f00",
+	
+	turretrld_laser_color = "faff00",
+	turretrld_laser_alpha = 0.3,
+	turretrld_laser_mode = 2,
+	turretrld_laser_radius = 0.5,
+	turretrld_laser_strobe_enabled = false,
+	turretrld_laser_strobe_string = "#1:0,ff0000;0.5,979a00",
+	
+	turretmad_laser_color = "00ffff",
+	turretmad_laser_alpha = 0.7,
+	turretmad_laser_mode = 2,
+	turretmad_laser_radius = 0.5,
+	turretmad_laser_strobe_enabled = true,
+	turretmad_laser_strobe_string = "#0.5:0,00ffff;0.5,00ff94"
+	
 }
 LasersPlus.settings = table.deep_map_copy(LasersPlus.default_settings)
 
@@ -109,7 +122,9 @@ LasersPlus._gadget_templates = {
 		team = {},
 		enemy = {},
 		world = {},
-		turret = {}
+		turretatt = {},
+		turretrld = {},
+		turretmad = {}
 	},
 	flashlight = {
 		user = {},
@@ -137,6 +152,11 @@ LasersPlus._gadget_colors_by_user = {
 	--]]
 }
 
+LasersPlus.LASER_THEMES_LOOKUP = {
+	turret_module_active = "turretatt",
+	turret_module_rearming = "turretrld",
+	turret_module_mad = "turretmad"
+}
 
 --Enables the whole mod's effects
 function LasersPlus:IsEnabled()
@@ -152,7 +172,9 @@ function LasersPlus:SetupAllGadgetTemplates()
 	self:SetupTeamGadgetTemplates()
 	self:SetupEnemyGadgetTemplates()
 	self:SetupWorldGadgetTemplates()
-	self:SetupTurretGadgetTemplates()
+	self:SetupTurretActiveGadgetTemplates()
+	self:SetupTurretRearmingGadgetTemplates()
+	self:SetupTurretMadGadgetTemplates()
 end
 
 function LasersPlus:SetupUserGadgetTemplates()
@@ -216,20 +238,37 @@ function LasersPlus:SetupWorldGadgetTemplates()
 	laser_templates.world.strobe_enabled = self.settings.world_laser_strobe_enabled
 	laser_templates.world.strobe_data = self:StringToStrobe(self.settings.world_laser_strobe_string)
 end
-function LasersPlus:SetupTurretGadgetTemplates()
+
+function LasersPlus:SetupTurretActiveGadgetTemplates()
 	local laser_templates = self._gadget_templates.laser
-	laser_templates.turret.color_attack = Color(self.settings.turret_att_laser_color)
-	laser_templates.turret.color_mad = Color(self.settings.turret_mad_laser_color)
-	laser_templates.turret.color_reload = Color(self.settings.turret_rld_laser_color)
-	
-	laser_templates.turret.alpha = self.settings.turret_laser_alpha
-	laser_templates.turret.mode = self.settings.turret_laser_display_mode
-	laser_templates.turret.radius = self.settings.turret_laser_radius
-	
-	laser_templates.turret.strobe_enabled = self.settings.turret_laser_strobe_enabled
-	laser_templates.turret.strobe_data_attack = self:StringToStrobe(self.settings.turret_attack_laser_strobe_string)
-	laser_templates.turret.strobe_data_mad = self:StringToStrobe(self.settings.turret_mad_laser_strobe_string)
-	laser_templates.turret.strobe_data_reload = self:StringToStrobe(self.settings.turret_reload_laser_strobe_string)
+	laser_templates.turretatt.color = Color(self.settings.turretatt_laser_color)
+	laser_templates.turretatt.alpha = self.settings.turretatt_laser_alpha
+	laser_templates.turretatt.mode = self.settings.turretatt_laser_mode
+	laser_templates.turretatt.radius = self.settings.turretatt_laser_radius
+	laser_templates.turretatt.strobe_enabled = self.settings.turretatt_laser_strobe_enabled
+	laser_templates.turretatt.strobe_data = self:StringToStrobe(self.settings.turretatt_laser_strobe_string)
+end
+function LasersPlus:SetupTurretRearmingGadgetTemplates()
+	local laser_templates = self._gadget_templates.laser
+	laser_templates.turretrld.color = Color(self.settings.turretrld_laser_color)
+	laser_templates.turretrld.alpha = self.settings.turretrld_laser_alpha
+	laser_templates.turretrld.mode = self.settings.turretrld_laser_mode
+	laser_templates.turretrld.radius = self.settings.turretrld_laser_radius
+	laser_templates.turretrld.strobe_enabled = self.settings.turretrld_laser_strobe_enabled
+	laser_templates.turretrld.strobe_data = self:StringToStrobe(self.settings.turretrld_laser_strobe_string)
+end
+function LasersPlus:SetupTurretMadGadgetTemplates()
+	local laser_templates = self._gadget_templates.laser
+	laser_templates.turretmad.color = Color(self.settings.turretmad_laser_color)
+	laser_templates.turretmad.alpha = self.settings.turretmad_laser_alpha
+	laser_templates.turretmad.mode = self.settings.turretmad_laser_mode
+	laser_templates.turretmad.radius = self.settings.turretmad_laser_radius
+	laser_templates.turretmad.strobe_enabled = self.settings.turretmad_laser_strobe_enabled
+	laser_templates.turretmad.strobe_data = self:StringToStrobe(self.settings.turretmad_laser_strobe_string)
+end
+
+function LasersPlus:GetUserTypeByTheme(mode)
+	return mode and self.LASER_THEMES_LOOKUP[mode]
 end
 
 -- hooked to both laser and flashlight
