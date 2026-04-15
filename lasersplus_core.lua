@@ -27,6 +27,19 @@ LasersPlus.default_settings = {
 --* 3: (only for player/teammate lasers/flashlights) the laser or flashlight is colored according to which player color they are-
 --	eg. player 1 is green, player 2 is blue, player 3 is red, player 4 is yellow
 	
+	feature_enabled_master = true,
+	feature_enabled_laser_strobe = true,
+	feature_enabled_flash_strobe = true,
+	feature_enabled_laser_network_sync = true,
+	feature_enabled_flash_network_sync = true,
+	
+	feature_enabled_laser_redfilter = true,
+	feature_enabled_qol_defaultgadget = true,
+	feature_enabled_gadget_multigadget = true,
+	feature_enabled_gadget_overload = true,
+	qol_defaultgadget_sight_color = 1,
+	qol_defaultgadget_sight_type = 1,
+	
 	user_laser_color = "00ff00",
 	user_laser_alpha = 0.7,
 	user_laser_display_mode = 2,
@@ -51,6 +64,7 @@ LasersPlus.default_settings = {
 	
 	team_flash_color = "ffffff",
 	team_flash_alpha = 1,
+	team_flash_display_mode = 1,
 	team_flash_range = 1000,
 	team_flash_angle = 60,
 	team_flash_strobe_enabled = false,
@@ -63,8 +77,10 @@ LasersPlus.default_settings = {
 	enemy_laser_strobe_enabled = true,
 	enemy_laser_strobe_string = "#1:0,ff0000;0.5,ff4700",
 	
+	enemy_flash_color = "ffffff",
 	enemy_flash_alpha = 1,
 	enemy_flash_range = 1000,
+	enemy_flash_display_mode = 1,
 	enemy_flash_angle = 60,
 	enemy_flash_strobe_enabled = false,
 	enemy_flash_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
@@ -409,40 +425,40 @@ function LasersPlus:convert_save_data(settings_from_file)
 					local value = old.own_laser_display_mode
 					if value == 1 then
 						-- hidden
-						new_settings.laser_display_user = value
+						new_settings.user_laser_display_mode = value
 					elseif value == 2 then
 						-- vanilla
-						new_settings.laser_display_user = value
+						new_settings.user_laser_display_mode = value
 					elseif value == 3 then
 						-- custom (use lasersplus settings)
-						new_settings.laser_display_user = value
+						new_settings.user_laser_display_mode = value
 					elseif value == 4 then
-						new_settings.laser_display_user = 3 -- use "custom", enable strobe
-						new_settings.laser_strobe_user = true
+						new_settings.user_laser_display_mode = 3 -- use "custom", enable strobe
+						new_settings.user_laser_strobe_enabled = true
 					end
 				end
-				new_settings.laser_color_user							= apply_color_with_fallback(old.own_laser_red,old.own_laser_green,old.own_laser_blue, new_settings.laser_color_user)
-				new_settings.laser_alpha_user							= apply_float_with_fallback(old.own_laser_alpha, new_settings.laser_alpha_user)
+				new_settings.user_laser_color							= apply_color_with_fallback(old.own_laser_red,old.own_laser_green,old.own_laser_blue, new_settings.user_laser_color)
+				new_settings.user_laser_alpha							= apply_float_with_fallback(old.own_laser_alpha, new_settings.user_laser_alpha)
 				
 				
 				if old.own_flashlight_display_mode then
 					local value = old.own_flashlight_display_mode
 					if value == 1 then
 						-- hidden
-						new_settings.flash_display_user = value
+						new_settings.user_flash_display_mode = value
 					elseif value == 2 then
 						-- vanilla
-						new_settings.flash_display_user = value
+						new_settings.user_flash_display_mode = value
 					elseif value == 3 then
 						-- custom (use lasersplus settings)
-						new_settings.flash_display_user = value
+						new_settings.user_flash_display_mode = value
 					elseif value == 4 then
-						new_settings.flash_display_user = 3 -- use "custom", enable strobe
-						new_settings.flash_strobe_user = true
+						new_settings.user_flash_display_mode = 3 -- use "custom", enable strobe
+						new_settings.user_flash_strobe_enabled = true
 					end
 				end
-				new_settings.flash_color_user							= apply_color_with_fallback(old.own_flash_red,old.own_flash_green,old.own_flash_blue, new_settings.flash_color_user)
-				new_settings.flash_alpha_user							= apply_float_with_fallback(old.own_flash_alpha, new_settings.flash_alpha_user)
+				new_settings.user_flash_color							= apply_color_with_fallback(old.own_flash_red,old.own_flash_green,old.own_flash_blue, new_settings.user_flash_color)
+				new_settings.user_flash_alpha							= apply_float_with_fallback(old.own_flash_alpha, new_settings.user_flash_alpha)
 				
 				-- ------------------------------------------
 					-- teammates (peers or ai crew members if you have a bot equipment mod that lets them use gadgets)
@@ -451,37 +467,37 @@ function LasersPlus:convert_save_data(settings_from_file)
 					local value = old.team_laser_display_mode
 					if value == 1 then
 						-- hidden
-						new_settings.laser_display_team = value
+						new_settings.team_laser_display_mode = value
 					elseif value == 2 then
 						-- vanilla
-						new_settings.laser_display_team = value
+						new_settings.team_laser_display_mode = value
 					elseif value == 3 then
 						-- custom (use lasersplus settings)
-						new_settings.laser_display_team = value
+						new_settings.team_laser_display_mode = value
 					elseif value == 4 then
 						-- peer color
-						new_settings.laser_display_team = value
+						new_settings.team_laser_display_mode = value
 					end
 				end
-				new_settings.laser_color_team							= apply_color_with_fallback(old.team_laser_red,old.team_laser_green,old.team_laser_blue, new_settings.laser_color_team)
-				new_settings.laser_alpha_team							= apply_float_with_fallback(old.team_laser_alpha, new_settings.laser_alpha_team)
+				new_settings.team_laser_color							= apply_color_with_fallback(old.team_laser_red,old.team_laser_green,old.team_laser_blue, new_settings.team_laser_color)
+				new_settings.team_laser_alpha							= apply_float_with_fallback(old.team_laser_alpha, new_settings.team_laser_alpha)
 				
 				if old.team_flashlight_display_mode then
 					local value = old.team_flashlight_display_mode
 					if value == 1 then
 						-- hidden
-						new_settings.flash_display_team = value
+						new_settings.team_flash_display_mode = value
 					elseif value == 2 then
 						-- vanilla
-						new_settings.flash_display_team = value
+						new_settings.team_flash_display_mode = value
 					elseif value == 3 then
 						-- custom (use lasersplus settings)
-						new_settings.flash_display_team = value
+						new_settings.team_flash_display_mode = value
 					end
 				end
-				new_settings.flash_strobe_team							= apply_bool_with_fallback(old.team_flashlight_strobe_enabled,new_settings.flash_strobe_team)
-				new_settings.flash_color_team							= apply_color_with_fallback(old.team_flash_red,old.team_flash_green,old.team_flash_blue, new_settings.flash_color_team)
-				new_settings.flash_alpha_team							= apply_float_with_fallback(old.team_flash_alpha, new_settings.flash_alpha_team)
+				new_settings.team_flash_strobe_enabled					= apply_bool_with_fallback(old.team_flashlight_strobe_enabled,new_settings.team_flash_strobe_enabled)
+				new_settings.team_flash_color							= apply_color_with_fallback(old.team_flash_red,old.team_flash_green,old.team_flash_blue, new_settings.team_flash_color)
+				new_settings.team_flash_alpha							= apply_float_with_fallback(old.team_flash_alpha, new_settings.team_flash_alpha)
 				
 				
 				-- ------------------------------------------
@@ -491,56 +507,67 @@ function LasersPlus:convert_save_data(settings_from_file)
 					local value = old.sniper_display_mode
 					if value == 1 then
 						-- hidden
-						new_settings.laser_display_enemy = value
+						new_settings.enemy_laser_display_mode = value
 					elseif value == 2 then
 						-- vanilla
-						new_settings.laser_display_enemy = value
+						new_settings.enemy_laser_display_mode = value
 					elseif value == 3 then
 						-- custom (use lasersplus settings)
-						new_settings.laser_display_enemy = value
+						new_settings.enemy_laser_display_mode = value
 					end
 				end
-				new_settings.laser_strobe_enemy							= apply_bool_with_fallback(old.sniper_strobe_enabled,new_settings.laser_strobe_enemy)
-				new_settings.laser_color_enemy							= apply_color_with_fallback(old.snpr_red,old.snpr_green,old.snpr_blue, new_settings.laser_color_enemy)
-				new_settings.laser_alpha_enemy							= apply_float_with_fallback(old.snpr_alpha, new_settings.laser_alpha_enemy)
+				new_settings.enemy_laser_strobe_enabled					= apply_bool_with_fallback(old.sniper_strobe_enabled,new_settings.enemy_laser_strobe_enabled)
+				new_settings.enemy_laser_color							= apply_color_with_fallback(old.snpr_red,old.snpr_green,old.snpr_blue, new_settings.enemy_laser_color)
+				new_settings.enemy_laser_alpha							= apply_float_with_fallback(old.snpr_alpha, new_settings.enemy_laser_alpha)
 				
 				if old.cop_flashlight_display_mode then
 					local value = old.cop_flashlight_display_mode
 					if value == 1 then
 						-- hidden
-						new_settings.flash_display_enemy = value
+						new_settings.enemy_flash_display_mode = value
 					elseif value == 2 then
 						-- vanilla
-						new_settings.flash_display_enemy = value
+						new_settings.enemy_flash_display_mode = value
 					elseif value == 3 then
 						-- custom (use lasersplus settings)
-						new_settings.flash_display_enemy = value
+						new_settings.enemy_flash_display_mode = value
 					end
 				end
-				new_settings.flash_strobe_enemy							= apply_bool_with_fallback(old.npc_flashlight_strobe_enabled,new_settings.flash_strobe_enemy)
-				new_settings.flash_color_enemy							= apply_color_with_fallback(old.npc_flash_red,old.npc_flash_green,old.npc_flash_blue, new_settings.flash_color_enemy)
-				new_settings.flash_alpha_enemy							= apply_float_with_fallback(old.npc_flash_alpha, new_settings.flash_alpha_enemy)
+				new_settings.enemy_flash_strobe_enabled					= apply_bool_with_fallback(old.npc_flashlight_strobe_enabled,new_settings.enemy_flash_strobe_enabled)
+				new_settings.enemy_flash_color							= apply_color_with_fallback(old.npc_flash_red,old.npc_flash_green,old.npc_flash_blue, new_settings.enemy_flash_color)
+				new_settings.enemy_flash_alpha							= apply_float_with_fallback(old.npc_flash_alpha, new_settings.enemy_flash_alpha)
 				
 				
 				-- ------------------------------------------
-					-- turret lasers (both friendly and enemy)
+					-- enemy turret lasers
 				-- ------------------------------------------
 				if old.turret_display_mode then
 					local value = old.turret_display_mode
 					if value == 1 then
 						-- hidden
-						new_settings.laser_display_turret = value
+						new_settings.turretatt_laser_mode = value
+						new_settings.turretrld_laser_mode = value
+						new_settings.turretmad_laser_mode = value
 					elseif value == 2 then
 						-- vanilla
-						new_settings.laser_display_turret = value
+						new_settings.turretatt_laser_mode = value
+						new_settings.turretrld_laser_mode = value
+						new_settings.turretmad_laser_mode = value
 					elseif value == 3 then
 						-- custom (use lasersplus settings)
-						new_settings.laser_display_turret = value
+						new_settings.turretatt_laser_mode = value
+						new_settings.turretrld_laser_mode = value
+						new_settings.turretmad_laser_mode = value
 					end
 				end
-				new_settings.laser_strobe_turret						= apply_bool_with_fallback(old.turret_strobe_enabled,new_settings.laser_strobe_turret)
-				new_settings.laser_color_world							= apply_color_with_fallback(old.wl_red,old.wl_green,old.wl_blue, new_settings.laser_color_world)
-				new_settings.laser_alpha_world							= apply_float_with_fallback(old.wl_alpha, new_settings.laser_alpha_world)
+				
+				new_settings.turretatt_laser_strobe_enabled				= apply_bool_with_fallback(old.turret_strobe_enabled,new_settings.turretatt_laser_strobe_enabled)
+				new_settings.turretrld_laser_strobe_enabled				= apply_bool_with_fallback(old.turret_strobe_enabled,new_settings.turretrld_laser_strobe_enabled)
+				new_settings.turretmad_laser_strobe_enabled				= apply_bool_with_fallback(old.turret_strobe_enabled,new_settings.turretmad_laser_strobe_enabled)
+				
+				new_settings.turretatt_laser_alpha						= apply_float_with_fallback(old.turr_att_alpha, new_settings.turretatt_laser_alpha)
+				new_settings.turretrld_laser_alpha						= apply_float_with_fallback(old.turr_rld_alpha, new_settings.turretrld_laser_alpha)
+				new_settings.turretmad_laser_alpha						= apply_float_with_fallback(old.turr_mad_alpha, new_settings.turretmad_laser_alpha)
 				
 				
 				-- ------------------------------------------
@@ -550,19 +577,18 @@ function LasersPlus:convert_save_data(settings_from_file)
 					local value = old.world_display_mode
 					if value == 1 then
 						-- hidden
-						new_settings.laser_display_world = value
+						new_settings.world_laser_display_mode = value
 					elseif value == 2 then
 						-- vanilla
-						new_settings.laser_display_world = value
+						new_settings.world_laser_display_mode = value
 					elseif value == 3 then
 						-- custom (use lasersplus settings)
-						new_settings.laser_display_world = value
+						new_settings.world_laser_display_mode = value
 					end
 				end
-				new_settings.laser_strobe_world						= apply_bool_with_fallback(old.world_strobe_enabled,new_settings.laser_strobe_world)
-				new_settings.laser_color_world							= apply_color_with_fallback(old.wl_red,old.wl_green,old.wl_blue, new_settings.laser_color_world)
-				new_settings.laser_alpha_world							= apply_float_with_fallback(old.wl_alpha, new_settings.laser_alpha_world)
-				
+				new_settings.world_laser_strobe_enabled					= apply_bool_with_fallback(old.world_strobe_enabled,new_settings.world_laser_strobe_enabled)
+				new_settings.world_laser_color							= apply_color_with_fallback(old.wl_red,old.wl_green,old.wl_blue, new_settings.world_laser_color)
+				new_settings.world_laser_alpha							= apply_float_with_fallback(old.wl_alpha, new_settings.world_laser_alpha)
 			end
 			return new_settings
 		else
@@ -582,7 +608,6 @@ function LasersPlus:LoadSettings()
 		file:close()
 	end
 end
-
 
 function LasersPlus:SaveSettings()
 	local file = io.open(self._settings_path,"w+")
