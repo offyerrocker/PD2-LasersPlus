@@ -59,13 +59,13 @@
 		{
 			"hook_id" : "lib/units/weapons/sentrygunweapon",
 			"script_path" : "hooks/sentrygunweapon.lua"
-		}
-	],
-	"DISABLED_hooks" : [
+		},
 		{
 			"hook_id" : "lib/managers/menu/blackmarketgui",
 			"script_path" : "hooks/blackmarketgui.lua"
-		},
+		}
+	],
+	"DISABLED_hooks" : [
 		{
 			"hook_id" : "lib/managers/menumanager",
 			"script_path" : "hooks/menumanager.lua"
