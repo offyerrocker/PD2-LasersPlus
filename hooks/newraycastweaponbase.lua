@@ -38,6 +38,6 @@ end)
 
 Hooks:PostHook(NewRaycastWeaponBase,"clbk_assembly_complete","lasersplus_onweaponassemblycomplete",function(self,clbk,parts,blueprint)
 	self:set_gadget_lp_user_type(self._lp_unit_user_type)
-	Print("clbk ssembly complete",self._lp_unit_user_type)
+--	Print("clbk ssembly complete",self._lp_unit_user_type)
 end)
 
