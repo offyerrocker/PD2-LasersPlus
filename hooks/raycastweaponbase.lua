@@ -37,6 +37,49 @@ elseif RequiredScript == "lib/units/weapons/newraycastweaponbase" then
 	--	Print("clbk ssembly complete",self._lp_unit_user_type)
 	end)
 	
+	--[[
+	Hooks:PostHook(NewRaycastWeaponBase,"_refresh_gadget_list","lasersplus_populate_gadgets",function(self)
+		if LasersPlus:IsQOLSightGadgetSwitchEnabled() then
+			-- disable cycling to second-sight type gadgets
+			self._lp_gadgets = {}
+			for _,part_id in ipairs(self._gadgets) do 
+				local part = self._parts[part_id]
+				local gadget_base = alive(part.unit) and part.unit:base()
+				local gadget_type = gadget_base and gadget_base.GADGET_TYPE
+				if gadget_type == "laser" or gadget_type == "flashlight" then
+				--if gadget_type == "second_sight" or gadget_type == "sight_gadget" then
+					table.insert(self._lp_gadgets,#self._lp_gadgets+1,part_id)
+				end
+			end
+		else
+			self._lp_gadgets = self._gadgets
+		end
+	end)
+	
+	--[[
+	-- multigadget
+	local orig_toggle_gadget = Hooks:GetFunction(NewRaycastWeaponBase,"toggle_gadget")
+	Hooks:OverrideFunction(NewRaycastWeaponBase,"toggle_gadget",function(current_state,...)
+		if not LasersPlus:IsQOLMultiGadgetCycleEnabled() or not self._lp_gadgets then 
+			return orig_toggle_gadget(self,current_state,...)
+		end
+		
+		if not self._enabled then 
+			return false
+		end
+		
+		local gadgets = self._lp_gadgets
+		local gadget_on = self._gadget_on or 0
+		
+		if gadgets then 
+			gadget_on = (gadget_on + 1) % num_gadgets
+			self:set_gadget_on(gadget_on,false,gadgets,current_state)
+			return true
+		end
+		return false
+	end)
+--]]
+	
 elseif RequiredScript == "lib/units/weapons/npcraycastweaponbase" then
 	
 	Hooks:PostHook(NPCRaycastWeaponBase,"set_laser_enabled","lasersplus_on_npcweapon_set_laser",function(self, unit)

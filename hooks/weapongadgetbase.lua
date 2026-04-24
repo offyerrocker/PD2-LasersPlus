@@ -12,7 +12,16 @@ if RequiredScript == "lib/units/weapons/weapongadgetbase" then
 	-- sentries do, but they have their user_type set externally from the sentry weapon base,
 	-- according to the state/theme of the sentry
 	function WeaponGadgetBase:set_lasersplus_type(user_type,peer_id)
+
+		if user_type ~= self._lp_user_type and self.GADGET_TYPE then
+			if self._lp_listener_hook_id then 
+				Hooks:Remove(self._lp_listener_hook_id,self._lp_key)
+			end
+			self._lp_listener_hook_id = "OnLasersPlusSettingChanged_" .. user_type .. "_" .. tostring(self.GADGET_TYPE)
+		end
+		
 		self:_set_lasersplus_type(user_type)
+		
 		if peer_id and user_type == "team" then 
 			self:set_lasersplus_peerid(peer_id)
 		end
@@ -53,22 +62,106 @@ if RequiredScript == "lib/units/weapons/weapongadgetbase" then
 		return self._lp_user_type
 	end
 
-elseif RequiredScript == "lib/units/weapons/weaponlaser" then
-	
-	Hooks:PreHook(WeaponLaser,"destroy","lasersplus_gadget_destroy",function(self,unit)
-		if self._lp_key then
-			Hooks:Remove("OnLasersPlusSettingChanged_Laser",self._lp_key)
+	Hooks:PreHook(WeaponGadgetBase,"destroy","lasersplus_gadget_destroy",function(self,unit)
+		if self._lp_listener_hook_id and self._lp_key then
+			Hooks:Remove(self._lp_listener_hook_id,self._lp_key)
+			self._lp_listener_hook_id = nil
 		end
 	end)
 
-	Hooks:PreHook(WeaponLaser,"update","lasersplus_laser_update",function(self,unit,t,dt)
-		if self._lp_data then
-			local color = LasersPlus.UpdateGadget(self._lp_data,t,dt)
-			if color then 
-				self:set_color(color)
+elseif RequiredScript == "lib/units/weapons/weaponlaser" then
+
+	if LasersPlus.settings.feature_enabled_laser_update then
+		local mvec1 = Vector3()
+		local mvec2 = Vector3()
+		local mvec_l_dir = Vector3()
+		
+		Hooks:OverrideFunction(WeaponLaser,"update",function(self,unit,t,dt)
+			local beam_width = self._is_npc and 0.5 or 0.25
+			local light_glow_mul = 0.1
+			local light_mul = 1
+			local template_data = LasersPlus:GetGadgetTemplate(self.GADGET_TYPE,self._lp_user_type)
+			-- apply regardless of display mode setting
+			if template_data then
+			--if template_data.mode ~= 1 then
+				beam_width = template_data.radius or beam_width
+				--light_glow_mul = template_data.dot_intensity
+				--light_mul = template_data.beam_intensity
 			end
-		end
-	end)
+			
+			if self._lp_data then
+				local color = LasersPlus.UpdateGadget(self._lp_data,t,dt)
+				if color then 
+					self:set_color(color)
+				end
+			end
+			
+			local rotation = self._custom_rotation or self._laser_obj:rotation()
+
+			mrotation.y(rotation, mvec_l_dir)
+
+			local from = mvec1
+
+			if self._custom_position then
+				mvector3.set(from, self._laser_obj:local_position())
+				mvector3.rotate_with(from, rotation)
+				mvector3.add(from, self._custom_position)
+			else
+				mvector3.set(from, self._laser_obj:position())
+			end
+
+			local to = mvec2
+
+			mvector3.set(to, mvec_l_dir)
+			mvector3.multiply(to, self._max_distance)
+			mvector3.add(to, from)
+
+			local ray = self._unit:raycast("ray", from, to, "slot_mask", self._slotmask, self._ray_ignore_units and "ignore_unit" or nil, self._ray_ignore_units)
+
+			if ray then
+				if not self._is_npc then
+					self._light:set_spot_angle_end(self._spot_angle_end)
+
+					self._spot_angle_end = math.lerp(1, 18, ray.distance / self._max_distance)
+
+					self._light_glow:set_spot_angle_end(math.lerp(8, 80, ray.distance / self._max_distance))
+
+					local scale = (math.clamp(ray.distance, self._max_distance - self._scale_distance, self._max_distance) - (self._max_distance - self._scale_distance)) / self._scale_distance
+					scale = 1 - scale
+
+					self._light:set_multiplier(scale * light_mul)
+					self._light_glow:set_multiplier(scale * light_glow_mul)
+				end
+
+				self._brush:cylinder(ray.position, from, beam_width)
+
+				local pos = mvec1
+
+				mvector3.set(pos, mvec_l_dir)
+				mvector3.multiply(pos, 50)
+				mvector3.negate(pos)
+				mvector3.add(pos, ray.position)
+				self._light:set_final_position(pos)
+				self._light_glow:set_final_position(pos)
+			else
+				self._light:set_final_position(to)
+				self._light_glow:set_final_position(to)
+				self._brush:cylinder(from, to, beam_width)
+			end
+
+			self._custom_position = nil
+			self._custom_rotation = nil
+		end)
+	else
+		Hooks:PreHook(WeaponLaser,"update","lasersplus_laser_update",function(self,unit,t,dt)
+			if self._lp_data then
+				local color = LasersPlus.UpdateGadget(self._lp_data,t,dt)
+				if color then 
+					self:set_color(color)
+				end
+			end
+		end)
+	end
 
 	function WeaponLaser:set_lasersplus_type(user_type,...)
 		WeaponLaser.super.set_lasersplus_type(self,user_type,...)
@@ -76,11 +169,18 @@ elseif RequiredScript == "lib/units/weapons/weaponlaser" then
 			if (_user_type == true or _user_type == self._lp_user_type) and (_user_type ~= "team" or self._is_npc or peer_id == true or peer_id == self._lp_peerid) then
 				if alive(self._light) then
 					if template_data and template_data.mode ~= 1 then
-						if template_data.color then
+						local color
+						if self._lp_peerid and template_data.mode == 3 then
+							color = LasersPlus:GetPeerColor(self._lp_peerid)
+						else
+							color = template_data.color
+						end
+						
+						if color then
 							if template_data.alpha then
-								self:set_color(template_data.color:with_alpha(template_data.alpha))
+								self:set_color(color:with_alpha(template_data.alpha))
 							else
-								self:set_color(template_data.color)
+								self:set_color(color)
 							end
 						end
 						
@@ -91,20 +191,15 @@ elseif RequiredScript == "lib/units/weapons/weaponlaser" then
 				end
 			end
 		end
-		
-		Hooks:Add("OnLasersPlusSettingChanged_Laser",self._lp_key,f_setup)
+		if self._lp_listener_hook_id then 
+			Hooks:Add(self._lp_listener_hook_id,self._lp_key,f_setup)
+		end
 		local template_data = LasersPlus:GetGadgetTemplate(self.GADGET_TYPE,user_type)
 		f_setup(template_data,true,true)
 	end
 	
 elseif RequiredScript == "lib/units/weapons/weaponflashlight" then
 	
-	Hooks:PreHook(WeaponFlashlight,"destroy","lasersplus_gadget_destroy",function(self,unit)
-		if self._lp_key then
-			Hooks:Remove("OnLasersPlusSettingChanged_Flashlight",self._lp_key)
-		end
-	end)
-
 	Hooks:PostHook(WeaponFlashLight,"update","lasersplus_flashlight_update",function(self,unit,t,dt)
 		if self._lp_data then
 			local color = LasersPlus.UpdateGadget(self._lp_data,t,dt)
@@ -147,7 +242,7 @@ elseif RequiredScript == "lib/units/weapons/weaponflashlight" then
 			end
 		end
 		
-		Hooks:Add("OnLasersPlusSettingChanged_Flashlight",self._lp_key,f_setup)
+		Hooks:Add(self._lp_listener_hook_id,self._lp_key,f_setup)
 		local template_data = LasersPlus:GetGadgetTemplate(self.GADGET_TYPE,user_type)
 		f_setup(template_data,true,true)
 	end

@@ -26,6 +26,7 @@ LasersPlus.default_settings = {
 --	eg. player 1 is green, player 2 is blue, player 3 is red, player 4 is yellow
 	
 	feature_enabled_gadget_network_sync = true,
+	feature_enabled_laser_update = true, -- if true, allows changing laser beam and dot width, but requires overriding weapon update (incompatible with other mods)
 	
 	feature_enabled_laser_redfilter = true,
 	feature_enabled_qol_defaultgadget = true,
@@ -49,7 +50,7 @@ LasersPlus.default_settings = {
 	user_flash_strobe_enabled = false,
 	user_flash_strobe_string ="#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
 	
-	team_laser_color = "ffffff",
+	team_laser_color = "00ff00",
 	team_laser_alpha = 0.5,
 	team_laser_display_mode = 1,
 	team_laser_radius = 0.5,
@@ -111,14 +112,45 @@ LasersPlus.default_settings = {
 }
 LasersPlus.settings = table.deep_map_copy(LasersPlus.default_settings)
 
--- can be changed via the ini file
+-- can be changed via the ini file;
+-- they need to be explicitly stored as a string by prefixing with a non-digit character,
+-- in case the R value of the color starts with a decimal digit
+LasersPlus.DEFAULT_PALETTES = {
+	"#ff0000",
+	"#ffff00",
+	"#00ff00",
+	"#00ffff",
+	"#0000ff",
+	"#880000",
+	"#888800",
+	"#008800",
+	"#008888",
+	"#000088",
+	"#ff8800",
+	"#88ff00",
+	"#00ff88",
+	"#0088ff",
+	"#8800ff",
+	"#884400",
+	"#448800",
+	"#008844",
+	"#004488",
+	"#440088",
+	"#ffffff",
+	"#bbbbbb",
+	"#888888",
+	"#444444",
+	"#000000"
+}
 LasersPlus.config = {
 	redfilter_threshold = 0.66,
-	peer_color_1 = "0x30ed4f",
-	peer_color_2 = "0x334cff",
-	peer_color_3 = "0xff2659",
-	peer_color_4 = "0xd88c19",
-	peer_color_5 = "0x00ffff"
+	PeerColors = {
+		"#c2fc97",
+		"#78b7cc",
+		"#b26859",
+		"#cca166"
+	},
+	Palettes = table.deep_map_copy(LasersPlus.DEFAULT_PALETTES)
 }
 
 LasersPlus._cached_template_string_laser = LasersPlus._cached_template_string_laser or nil
@@ -178,6 +210,19 @@ function LasersPlus.color_to_hex(color)
 	return string.format("%02x%02x%02x", math.min(math.max(color.r * 255,0),0xff),math.min(math.max(color.g * 255,0),0xff),math.min(math.max(color.b * 255,0),0xff))
 end
 
+-- only used for local storage, not for networking/syncing
+function LasersPlus.serialize_color(color)
+	return string.format("#%s",LasersPlus.color_to_hex(color))
+end
+
+function LasersPlus.parse_serialized_color(str)
+	return string.match("%x+",str)
+end
+
+function LasersPlus.deserialize_color(str)
+	return Color(LasersPlus.parse_serialized_color(str))
+end
+
 --format a strobe into a string ready to sync to other players
 function LasersPlus:StrobeToString(strobe_data)
 	local str = self.STROBE_NETWORKING_STRING_TEMPLATE
@@ -195,8 +240,7 @@ function LasersPlus:StrobeToString(strobe_data)
 end
 
 --takes a string from lua networking (sent from another LasersPlus user) and parses it into an unprocessed strobe
---name is based on the peer id of the sender, so you can only store one at a time
-function LasersPlus:StringToStrobe(s,name)
+function LasersPlus:StringToStrobe(s)
 	local FALLBACK_DURATION = 4
 	
 	local d1 = string.split(string.match(s,"%d.*"),":")
@@ -224,7 +268,7 @@ function LasersPlus:StringToStrobe(s,name)
 	end
 	
 	return {
-		name = name,
+		str = s,
 		duration = duration,
 		colors = colors
 	}
@@ -234,6 +278,12 @@ function LasersPlus:GetUserTypeByTheme(mode)
 	return mode and self.LASER_THEMES_LOOKUP[mode]
 end
 
+function LasersPlus:Print(...)
+	if _G.Print then
+		_G.Print("LasersPlus]",...)
+	end
+	log("[LasersPlus]",...)
+end
 
 -- ===================================== Settings Getters ==========================================
 
@@ -817,7 +867,7 @@ function LasersPlus:deserialize_laser_template(str)
 			
 			if alpha and radius then
 				return {
-					color = color_str
+					color = color_str,
 					alpha = alpha,
 					radius = radius,
 					strobe_enabled = strobe_enabled,
@@ -855,7 +905,7 @@ function LasersPlus:deserialize_flash_template(str)
 			
 			if alpha and range and angle then
 				return {
-					color = color_str
+					color = color_str,
 					alpha = alpha,
 					range = range,
 					angle = angle,
@@ -903,7 +953,8 @@ function LasersPlus:SyncTemplatesToPeers()
 	--LuaNetworking:SendToPeers(self.NETWORK_EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH,flash_body)
 end
 
-function LasersPlus:StorePeerColor(peer,data,type_id,unit)
+-- store synced LP color from LP modded teammate 
+function LasersPlus:StoreTeamColor(peer,data,type_id,unit)
 	local uid = peer:user_id()
 	local stored_colors = LasersPlus._gadget_colors_by_user[uid]
 	if not stored_colors then 
@@ -984,8 +1035,166 @@ function LasersPlus:StorePeerColor(peer,data,type_id,unit)
 	end
 end
 
+-- get lobby player color (eg. host is green, player 2 is blue, player 3 is red, player 4 is orange)
+function LasersPlus:GetPeerColor(peer_id)
+	local hex_code = self.config.PeerColors[peer_id]
+	if hex_code then
+		return self.deserialize_color(hex_code)
+	else
+		return tweak_data.chat_colors[peer_id]
+	end
+end
+
+function LasersPlus:SetPeerColor(peer_id,color)
+	if not color then return end
+	self.config.PeerColors[peer_id] = self.serialize_color(color)
+end
 
 -- ===================================== Menu ==========================================
+
+function LasersPlus:GetColorpickerPalettes()
+	local result = {}
+	for i,str in ipairs(self.config.Palettes) do 
+		result[i] = self.deserialize_color(str)
+	end
+	return result
+end
+
+function LasersPlus:SetColorpickerPalettes(palettes)
+	if type(palettes) == "table" then 
+		for i,color in ipairs(palettes) do 
+			self.config.Palettes[i] = self.serialize_color(color)
+		end
+	end
+end
+
+function LasersPlus:GetDefaultColorpickerPalettes()
+	local result = {}
+	for i,str in ipairs(self.DEFAULT_PALETTES) do 
+		result[i] = self.deserialize_color(str)
+	end
+	return result
+end
+
+
+function LasersPlus:GetSettingPrefix(gadget_type,user_type)
+	if gadget_type == "laser" then
+		return user_type .. "_laser_"
+	elseif gadget_type == "flashlight" then
+		return user_type .. "_flash_"
+	end
+	
+	return nil
+end
+
+function LasersPlus:ChangeSetting(key,value)
+	if key and self.settings[key] ~= nil and value ~= nil then
+		self.settings[key] = value
+	end
+end
+
+-- There's gotta be a better way to do this /j
+-- NOTE: SHOULD NOT BE CALLED FROM PEERS!
+-- should only be called from the local user changing menu settings for any given user_type
+function LasersPlus:OnTemplateChanged(gadget_type,user_type,new_data)
+	if not new_data then return end
+	
+	local template_data = self:GetGadgetTemplate(gadget_type,user_type)
+	
+	local setting_prefix = self:GetSettingPrefix(gadget_type,user_type)
+	local done_any
+	
+	-- these five are used for both laser and flashlight
+	if new_data.color and template_data.color ~= new_data.color then
+		self:ChangeSetting(setting_prefix .. "color",self.color_to_hex(new_data.color))
+		template_data.color = new_data.color
+		done_any = true
+	end
+	if new_data.alpha and template_data.alpha ~= new_data.alpha then
+		self:ChangeSetting(setting_prefix .. "alpha",tonumber(new_data.alpha))
+		template_data.alpha = new_data.alpha
+		done_any = true
+	end
+	if new_data.mode and template_data.mode ~= new_data.mode then
+		self:ChangeSetting(setting_prefix .. "display_mode",tonumber(new_data.mode))
+		template_data.mode = new_data.mode
+		done_any = true
+	end
+	if new_data.strobe_enabled ~= nil and template_data.strobe_enabled ~= new_data.strobe_enabled then
+		self:ChangeSetting(setting_prefix .. "strobe_enabled",new_data.strobe_enabled and true or false)
+		template_data.strobe_enabled = new_data.strobe_enabled
+		done_any = true
+	end
+	if new_data.strobe_data and new_data.strobe_data.str ~= new_data.strobe_data.str then
+		local strobe_data = self:StringToStrobe(new_data.strobe_data.str)
+		template_data.strobe_data = strobe_data
+		self:ChangeSetting(setting_prefix .. "strobe_string",new_data.strobe_data.str)
+		done_any = true
+	end
+	
+	if gadget_type == "laser" then
+		if new_data.radius and template_data.radius ~= new_data.radius then
+			template_data.radius = new_data.radius
+			self:ChangeSetting(setting_prefix .. "radius",tonumber(new_data.radius))
+			done_any = true
+		end
+	elseif gadget_type == "flashlight" then
+		if new_data.range and template_data.range ~= new_data.range then
+			template_data.range = new_data.range
+			self:ChangeSetting(setting_prefix .. "range",tonumber(new_data.range))
+			done_any = true
+		end
+		if new_data.angle and template_data.angle ~= new_data.angle then
+			template_data.angle = new_data.angle
+			self:ChangeSetting(setting_prefix .. "angle",tonumber(new_data.angle))
+			done_any = true
+		end
+	end
+	
+	if done_any then
+		local hook_id = "OnLasersPlusSettingChanged_" .. user_type .. "_" .. gadget_type
+		Hooks:Call(hook_id,template_data,user_type)
+	end
+	
+end
+
+function LasersPlus:RefreshPreviews(gadget_type,user_type,new_data)
+	
+end
+
+
+function LasersPlus:CreateColorpicker()
+	if _G.ColorPicker then 
+		self._colorpicker = self._colorpicker or _G.ColorPicker:new("lasersplus",{},nil)
+	end
+end
+
+function LasersPlus:ShowColorpicker(gadget_type,user_type)
+	if ColorPicker and self._colorpicker then 
+		local template_data = self:GetGadgetTemplate(gadget_type,user_type)
+		
+		
+		
+		self._colorpicker:Show({
+			color = template_data.color,
+			palettes = self:GetColorpickerPalettes(),
+			default_palettes = self:GetDefaultColorpickerPalettes(),
+			done_callback = function(new_color,palettes,success)
+				self:SetColorpickerPalettes(palettes)
+				if success then 
+					self:OnTemplateChanged(gadget_type,user_type,{
+						color = new_color
+					})
+					self:SaveSettings()
+				end 
+			end,
+			changed_callback = function(new_color) 
+				-- update preview
+				self:RefreshPreviews(gadget_type,user_type,{color=new_color})
+			end
+		})
+	end
+end
 
 Hooks:Add("OnLasersPlusSettingChanged_Laser","LasersPlus_NetworkRefreshSyncGadgetsLaser",function(template_data)
 	LasersPlus._cached_template_string_laser = nil
@@ -994,11 +1203,6 @@ end)
 Hooks:Add("OnLasersPlusSettingChanged_Flashlight","LasersPlus_NetworkRefreshSyncGadgetsFlashlight",function(template_data)
 	LasersPlus._cached_template_string_flash = nil
 	LasersPlus:SyncTemplatesToPeers()
-end)
-
-Hooks:Add("MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(menu_manager)
-	LasersPlus:LoadSettings()
-	LasersPlus:SetupAllGadgetTemplates()
 end)
 
 
