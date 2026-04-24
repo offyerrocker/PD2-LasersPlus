@@ -71,12 +71,14 @@ if RequiredScript == "lib/units/weapons/weapongadgetbase" then
 
 elseif RequiredScript == "lib/units/weapons/weaponlaser" then
 
-	if LasersPlus.settings.feature_enabled_laser_update then
+	if LasersPlus.settings.feature_enabled_laser_override then
 		local mvec1 = Vector3()
 		local mvec2 = Vector3()
 		local mvec_l_dir = Vector3()
 		
 		Hooks:OverrideFunction(WeaponLaser,"update",function(self,unit,t,dt)
+			-- if LasersPlus.settings.feature_enabled_laser_accurate then
+			
 			local beam_width = self._is_npc and 0.5 or 0.25
 			local light_glow_mul = 0.1
 			local light_mul = 1
@@ -224,13 +226,14 @@ elseif RequiredScript == "lib/units/weapons/weaponflashlight" then
 							self._light:set_spot_angle_end(template_data.angle)
 						end
 						if template_data.range then
-							self._light:set_far_range(template_data.range)
+							self._light:set_far_range(template_data.range * 100)
 						end
 						
-						if template_data.color and template_data.light_alpha then 
-							self:set_color(template_data.color:with_alpha(template_data.light_alpha))
-						else
+						if template_data.color then 
 							self:set_color(template_data.color)
+						elseif template_data.alpha and LasersPlus.settings.feature_enabled_flashlight_override then
+							-- apply opacity change by setting the color
+							self:set_color(self._light:color())
 						end
 						
 						-- self._light:set_multiplier(self._current_light_multiplier)
@@ -246,7 +249,51 @@ elseif RequiredScript == "lib/units/weapons/weaponflashlight" then
 		local template_data = LasersPlus:GetGadgetTemplate(self.GADGET_TYPE,user_type)
 		f_setup(template_data,true,true)
 	end
+	
+	if LasersPlus.settings.feature_enabled_flashlight_override then 
+		-- override allow setting the glow effect opacity
+		-- (aka fake volumetric light fog)
+		Hooks:OverrideFunction(WeaponFlashLight,"set_color",function(self,color)
+			if self:is_haunted() then
+				return
+			end
 
+			if not color then
+				return
+			end
+
+			local opacity_ids = Idstring("opacity")
+			local col_vec = Vector3(color.r, color.g, color.b)
+
+			self._light:set_color(col_vec)
+
+			local template_data = LasersPlus:GetGadgetTemplate(self.GADGET_TYPE,self._lp_user_type)
+			
+			if self._is_npc then
+				local glow_alpha = template_data and template_data.alpha or WeaponFlashLight.NPC_GLOW_OPACITY_MAX
+				local cone_alpha = template_data and template_data.alpha or WeaponFlashLight.NPC_CONE_OPACITY_MAX
+				
+				
+				World:effect_manager():set_simulator_var_float(self._light_effect, Idstring("glow base camera r"), opacity_ids, opacity_ids, color.r * glow_alpha)
+				World:effect_manager():set_simulator_var_float(self._light_effect, Idstring("glow base camera g"), opacity_ids, opacity_ids, color.g * glow_alpha)
+				World:effect_manager():set_simulator_var_float(self._light_effect, Idstring("glow base camera b"), opacity_ids, opacity_ids, color.b * glow_alpha)
+				World:effect_manager():set_simulator_var_float(self._light_effect, Idstring("lightcone r"), opacity_ids, opacity_ids, color.r * cone_alpha)
+				World:effect_manager():set_simulator_var_float(self._light_effect, Idstring("lightcone g"), opacity_ids, opacity_ids, color.g * cone_alpha)
+				World:effect_manager():set_simulator_var_float(self._light_effect, Idstring("lightcone b"), opacity_ids, opacity_ids, color.b * cone_alpha)
+			else
+				local glow_alpha = template_data and template_data.alpha or WeaponFlashLight.EFFECT_OPACITY_MAX
+				
+				local r_ids = Idstring("red")
+				local g_ids = Idstring("green")
+				local b_ids = Idstring("blue")
+
+				World:effect_manager():set_simulator_var_float(self._light_effect, r_ids, r_ids, opacity_ids, color.r * glow_alpha)
+				World:effect_manager():set_simulator_var_float(self._light_effect, g_ids, g_ids, opacity_ids, color.g * glow_alpha)
+				World:effect_manager():set_simulator_var_float(self._light_effect, b_ids, b_ids, opacity_ids, color.b * glow_alpha)
+			end
+		end)
+	end
+	
 end
 
 

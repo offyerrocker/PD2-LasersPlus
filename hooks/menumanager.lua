@@ -544,10 +544,10 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 				desc = "loc_lasersplus_generic_flash_alpha_desc",
 				callback = callback_id_flash_alpha,
 				value = flash_template_data.alpha,
-				default_value = 1,
+				default_value = 16,
 				min = 0,
-				max = 1,
-				step = 0.1,
+				max = 100,
+				step = 10,
 				show_value = true,
 				menu_id = parent_menu_id
 			})
@@ -560,10 +560,10 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 				desc = "loc_lasersplus_generic_flash_range_desc",
 				callback = callback_id_flash_range,
 				value = flash_template_data.range,
-				default_value = 1000,
+				default_value = 10,
 				min = 0,
-				max = 10000,
-				step = 1000,
+				max = 100,
+				step = 10,
 				show_value = true,
 				menu_id = parent_menu_id
 			})

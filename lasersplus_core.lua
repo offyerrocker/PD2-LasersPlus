@@ -26,7 +26,10 @@ LasersPlus.default_settings = {
 --	eg. player 1 is green, player 2 is blue, player 3 is red, player 4 is yellow
 	
 	feature_enabled_gadget_network_sync = true,
-	feature_enabled_laser_update = true, -- if true, allows changing laser beam and dot width, but requires overriding weapon update (incompatible with other mods)
+	feature_enabled_laser_override = true, -- if true, allows changing laser beam and dot width, but requires overriding laser update (possibly incompatible with other mods)
+	feature_enabled_flashlight_override = true, -- if true, allows changing flashlight glow opacity, but requires overriding flashlight set_color (possibly incompatible with other mods)
+	
+	feature_enabled_laser_accurate = false, -- if true, weapon laser more closely follows the crosshair (weapon position)
 	
 	feature_enabled_laser_redfilter = true,
 	feature_enabled_qol_defaultgadget = true,
@@ -45,7 +48,7 @@ LasersPlus.default_settings = {
 	user_flash_color = "dbddff",
 	user_flash_alpha = 1,
 	user_flash_display_mode = 2,
-	user_flash_range = 1000,
+	user_flash_range = 10,
 	user_flash_angle = 60,
 	user_flash_strobe_enabled = false,
 	user_flash_strobe_string ="#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
@@ -60,7 +63,7 @@ LasersPlus.default_settings = {
 	team_flash_color = "ffffff",
 	team_flash_alpha = 1,
 	team_flash_display_mode = 1,
-	team_flash_range = 1000,
+	team_flash_range = 10,
 	team_flash_angle = 60,
 	team_flash_strobe_enabled = false,
 	team_flash_strobe_string = "#1:0,ff0000;0.1667,ffff00;0.3333,00ff00;0.5,00ffff;0.6667,0000ff;0.8333,ff00ff",
@@ -74,7 +77,7 @@ LasersPlus.default_settings = {
 	
 	enemy_flash_color = "ffffff",
 	enemy_flash_alpha = 1,
-	enemy_flash_range = 1000,
+	enemy_flash_range = 10,
 	enemy_flash_display_mode = 1,
 	enemy_flash_angle = 60,
 	enemy_flash_strobe_enabled = false,
