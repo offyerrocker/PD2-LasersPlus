@@ -9,6 +9,9 @@ LasersPlus._converted_legacy_settings_path = LasersPlus._save_directory .. "OLD_
 LasersPlus._settings_path = LasersPlus._save_directory .. "lasersplus_settings.json"
 LasersPlus.STROBE_NETWORKING_STRING_TEMPLATE = "$DURATION:$COLORS"
 
+LasersPlus._config_path = LasersPlus._save_directory .. "lasersplus_extra_config.ini"
+LasersPlus._util_LIP = LasersPlus._util_LIP or dofile(LasersPlus._mod_path .. "req/LIP.lua")
+
 LasersPlus.NETWORK_EVENT_IDS = {
 	LASERSPLUS_SYNC_GADGET_ALL	 = "LasersPlus_sync_gadgets"
 --	,LASERSPLUS_SYNC_GADGET_LASER = "LasersPlus_sync_laser",
@@ -121,34 +124,8 @@ LasersPlus.settings = table.deep_map_copy(LasersPlus.default_settings)
 -- can be changed via the ini file;
 -- they need to be explicitly stored as a string by prefixing with a non-digit character,
 -- in case the R value of the color starts with a decimal digit
-LasersPlus.DEFAULT_PALETTES = {
-	"#ff0000",
-	"#ffff00",
-	"#00ff00",
-	"#00ffff",
-	"#0000ff",
-	"#880000",
-	"#888800",
-	"#008800",
-	"#008888",
-	"#000088",
-	"#ff8800",
-	"#88ff00",
-	"#00ff88",
-	"#0088ff",
-	"#8800ff",
-	"#884400",
-	"#448800",
-	"#008844",
-	"#004488",
-	"#440088",
-	"#ffffff",
-	"#bbbbbb",
-	"#888888",
-	"#444444",
-	"#000000"
-}
-LasersPlus.config = {
+
+LasersPlus.default_config = { 
 	redfilter_threshold = 0.66,
 	PeerColors = {
 		"#c2fc97",
@@ -156,7 +133,41 @@ LasersPlus.config = {
 		"#b26859",
 		"#cca166"
 	},
-	Palettes = table.deep_map_copy(LasersPlus.DEFAULT_PALETTES)
+	Palettes = {
+		"#ff0000",
+		"#ffff00",
+		"#00ff00",
+		"#00ffff",
+		"#0000ff",
+		"#880000",
+		"#888800",
+		"#008800",
+		"#008888",
+		"#000088",
+		"#ff8800",
+		"#88ff00",
+		"#00ff88",
+		"#0088ff",
+		"#8800ff",
+		"#884400",
+		"#448800",
+		"#008844",
+		"#004488",
+		"#440088",
+		"#ffffff",
+		"#bbbbbb",
+		"#888888",
+		"#444444",
+		"#000000"
+	}
+}
+
+LasersPlus.config = table.deep_map_copy(LasersPlus.default_config)
+
+LasersPlus.SORT_CONFIG = {
+	"redfilter_threshold",
+	"PeerColors",
+	"Palettes"
 }
 
 LasersPlus._cached_template_string_laser = LasersPlus._cached_template_string_laser or nil
@@ -222,7 +233,7 @@ function LasersPlus.serialize_color(color)
 end
 
 function LasersPlus.parse_serialized_color(str)
-	return string.match("%x+",str)
+	return string.match(str,"%x+")
 end
 
 function LasersPlus.deserialize_color(str)
@@ -494,6 +505,17 @@ function LasersPlus:SaveSettings()
 	end
 end
 
+-- stores things that don't really have a menu option,
+-- or don't fit the settings schema (such as palettes, which is a table of unspecified size)
+-- or should otherwise be readable and editable by determined humans
+function LasersPlus:LoadConfig()
+	if SystemFS and SystemFS:exists( Application:nice_path( self._config_path, true )) then
+		self._util_LIP:load(self._config_path)
+	end
+end
+function LasersPlus:SaveConfig()
+	self._util_LIP:save(self._config_path,self.config,self.SORT_CONFIG)
+end
 
 function LasersPlus:convert_save_data(settings_from_file)
 	if settings_from_file.version == self.LASERSPLUS_SAVEFILE_VERSION then
@@ -1056,10 +1078,12 @@ end
 
 -- ===================================== Menu ==========================================
 
+
+
 function LasersPlus:GetColorpickerPalettes()
 	local result = {}
 	for i,str in ipairs(self.config.Palettes) do 
-		result[i] = self.deserialize_color(str)
+		result[i] = self.parse_serialized_color(str)
 	end
 	return result
 end
@@ -1074,19 +1098,12 @@ end
 
 function LasersPlus:GetDefaultColorpickerPalettes()
 	local result = {}
-	for i,str in ipairs(self.DEFAULT_PALETTES) do 
+	for i,str in ipairs(self.default_config.Palettes) do 
 		result[i] = self.deserialize_color(str)
 	end
 	return result
 end
 
-
-function LasersPlus:LoadConfig()
-
-end
-function LasersPlus:SaveConfig()
-	
-end
 
 function LasersPlus:GetSettingPrefix(gadget_type,user_type)
 	if gadget_type == "laser" then
