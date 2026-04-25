@@ -70,15 +70,12 @@ if RequiredScript == "lib/units/weapons/weapongadgetbase" then
 	end)
 
 elseif RequiredScript == "lib/units/weapons/weaponlaser" then
-
 	if LasersPlus.settings.feature_enabled_laser_override then
 		local mvec1 = Vector3()
 		local mvec2 = Vector3()
-		local mvec_l_dir = Vector3()
-		
+		local mvec_l_dir = Vector3() -- that's the lowercase letter "L", not a 1. ask me how i know. hint: it rhymes with "schmaccess schmiolation" 
 		Hooks:OverrideFunction(WeaponLaser,"update",function(self,unit,t,dt)
-			-- if LasersPlus.settings.feature_enabled_laser_accurate then
-			
+					
 			local beam_width = self._is_npc and 0.5 or 0.25
 			local light_glow_mul = 0.1
 			local light_mul = 1
@@ -98,12 +95,16 @@ elseif RequiredScript == "lib/units/weapons/weaponlaser" then
 				end
 			end
 			
+			local ray_distance -- used to calculate how large and how intense to draw the light dot
+			local has_ray -- determines whether to draw light dot on a raycasted surface
+			
+			-- set the beam's drawn starter position and angle (vanilla code)
 			local rotation = self._custom_rotation or self._laser_obj:rotation()
-
+			
 			mrotation.y(rotation, mvec_l_dir)
-
+			
 			local from = mvec1
-
+			
 			if self._custom_position then
 				mvector3.set(from, self._laser_obj:local_position())
 				mvector3.rotate_with(from, rotation)
@@ -111,48 +112,121 @@ elseif RequiredScript == "lib/units/weapons/weaponlaser" then
 			else
 				mvector3.set(from, self._laser_obj:position())
 			end
-
+			
 			local to = mvec2
-
-			mvector3.set(to, mvec_l_dir)
-			mvector3.multiply(to, self._max_distance)
-			mvector3.add(to, from)
-
-			local ray = self._unit:raycast("ray", from, to, "slot_mask", self._slotmask, self._ray_ignore_units and "ignore_unit" or nil, self._ray_ignore_units)
-
-			if ray then
+			
+			-- get the modded final position
+			local use_accurate_laser = LasersPlus.settings.feature_enabled_laser_accurate
+			if use_accurate_laser and self._lp_user_type == "user" then
+				
+				local player = managers.player:local_player()
+				local mov_ext = alive(player) and player:movement()
+				local state = mov_ext and mov_ext:current_state()
+				if state then
+					local fwd_ray = state._fwd_ray
+					if fwd_ray then
+						-- indicate that we already have a ray,
+						-- so no need to cast another
+						has_ray = true
+					
+						-- final ray position
+						mvector3.set(to,fwd_ray.position)
+						
+						-- set the new beam direction (from gadget position to fwd_ray position)
+						mvector3.set(mvec_l_dir, to)
+						mvector3.subtract(mvec_l_dir, from)
+						mvector3.normalize(mvec_l_dir)
+						
+						-- cheat the math a little bit for performance reasons
+						-- by using the distance of the actual ray,
+						-- instead of the distance of the visual ray
+						-- (sqrt operations? in THIS economy??)
+						ray_distance = fwd_ray.distance
+					else
+						-- skip trying to raycast
+						has_ray = false
+						
+						-- nothing for the ray to hit,
+						-- so just find the max position to draw the light at
+						-- (not that it matters since it won't be visible)
+						mvector3.set(mvec_l_dir,state._cam_fwd or state:get_fire_weapon_direction())
+						mvector3.set(to, mvec_l_dir)
+						mvector3.multiply(to, self._max_distance)
+						mvector3.add(to, mov_ext:m_head_pos() or state:get_fire_weapon_position())
+					end
+					
+					--[[
+					-- (not working) attempt to align laser dot to accurate screen position
+					if has_ray then 
+						local obj_rot = obj:rotation()
+						--tmp_vec = tmp_vec + obj_rotation():z()
+						local obj = self._laser_obj
+						rot = Rotation(rot:yaw() + obj_rot:z(),rot:pitch() - obj_rot:pitch(),rot:roll() + obj_rot:roll())
+						
+						local rot = mov_ext:m_head_rot()
+						--local rot = Rotation()
+						--local tmp_vec = to - from
+						--mrotation.set_look_at(rot,tmp_vec,math.UP)
+						self._light:set_rotation(rot)
+						self._light_glow:set_rotation(rot)
+					end
+					--]]
+					
+				end
+			end
+			
+			-- equivalent to vanilla ray method
+			if has_ray == nil then
+				
+				mvector3.set(to, mvec_l_dir)
+				mvector3.multiply(to, self._max_distance)
+				mvector3.add(to, from)
+				
+				local ray = self._unit:raycast("ray", from, to, "slot_mask", self._slotmask, self._ray_ignore_units and "ignore_unit" or nil, self._ray_ignore_units)
+				
+				if ray then
+					has_ray = true
+					
+					ray_distance = ray.distance
+					mvector3.set(to,ray.position)
+				end
+			end
+			
+			if has_ray then
+				-- successful ray collision;
+				-- draw the lights at their collided end positions
 				if not self._is_npc then
 					self._light:set_spot_angle_end(self._spot_angle_end)
 
-					self._spot_angle_end = math.lerp(1, 18, ray.distance / self._max_distance)
+					self._spot_angle_end = math.lerp(1, 18, ray_distance / self._max_distance)
 
-					self._light_glow:set_spot_angle_end(math.lerp(8, 80, ray.distance / self._max_distance))
+					self._light_glow:set_spot_angle_end(math.lerp(8, 80, ray_distance / self._max_distance))
 
-					local scale = (math.clamp(ray.distance, self._max_distance - self._scale_distance, self._max_distance) - (self._max_distance - self._scale_distance)) / self._scale_distance
+					local scale = (math.clamp(ray_distance, self._max_distance - self._scale_distance, self._max_distance) - (self._max_distance - self._scale_distance)) / self._scale_distance
 					scale = 1 - scale
 
 					self._light:set_multiplier(scale * light_mul)
 					self._light_glow:set_multiplier(scale * light_glow_mul)
 				end
-
-				self._brush:cylinder(ray.position, from, beam_width)
-
+				
+				self._brush:cylinder(from, to, beam_width)
+				
 				local pos = mvec1
-
+				
 				mvector3.set(pos, mvec_l_dir)
 				mvector3.multiply(pos, 50)
 				mvector3.negate(pos)
-				mvector3.add(pos, ray.position)
+				mvector3.add(pos, to)
+				
 				self._light:set_final_position(pos)
 				self._light_glow:set_final_position(pos)
 			else
+				-- no ray;
+				-- draw the lights at their max end distance or whatever
 				self._light:set_final_position(to)
 				self._light_glow:set_final_position(to)
 				self._brush:cylinder(from, to, beam_width)
 			end
-
-			self._custom_position = nil
-			self._custom_rotation = nil
 		end)
 	else
 		Hooks:PreHook(WeaponLaser,"update","lasersplus_laser_update",function(self,unit,t,dt)
@@ -217,10 +291,6 @@ elseif RequiredScript == "lib/units/weapons/weaponflashlight" then
 			if (_user_type == true or _user_type == self._lp_user_type) and (_user_type ~= "team" or self._is_npc or peer_id == true or peer_id == self._lp_peerid) then
 				if alive(self._light) then
 					if template_data and template_data.mode ~= 1 then
-				
-						if template_data.glow_alpha then
-							--self._lp_glow_alpha = template_data.glow_alpha
-						end
 						
 						if template_data.angle then 
 							self._light:set_spot_angle_end(template_data.angle)
