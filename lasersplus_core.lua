@@ -36,7 +36,6 @@ LasersPlus.default_settings = {
 	
 	feature_state_gadget_multigadget = 2,
 	
-	feature_enabled_gadget_overload = true,
 	qol_defaultgadget_sight_color = 1,
 	qol_defaultgadget_sight_type = 1,
 	
