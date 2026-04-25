@@ -215,6 +215,20 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		if params and params.laser then
 			local laser_template_data = LasersPlus:GetGadgetTemplate("laser",user_type)
 			
+			add_menu_option("button",{
+				id = "lasersplus_menu_subheader_laser_" .. user_type,
+				title = "loc_lasersplus_generic_laser_subheader_title",
+				desc = "loc_lasersplus_generic_laser_subheader_desc",
+				callback = "callback_lasersplus_header_dummy",
+				menu_id = parent_menu_id,
+				disabled = true
+			})
+			add_menu_option("divider",{
+				id = "lasersplus_menu_divider_laser_" .. user_type,
+				size = 2,
+				menu_id = parent_menu_id
+			})
+			
 			local callback_id_laser_display_mode = "callback_lasersplus_laser_display_mode_" .. user_type
 			MenuCallbackHandler[callback_id_laser_display_mode] = create_setting_changed_callback(user_type,"laser","mode","number")
 			add_menu_option("multiple_choice",{
@@ -376,6 +390,20 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		if params and params.flash then
 			
 			local flash_template_data = LasersPlus:GetGadgetTemplate("flashlight",user_type)
+			
+			add_menu_option("button",{
+				id = "lasersplus_menu_subheader_flash_" .. user_type,
+				title = "loc_lasersplus_generic_flash_subheader_title",
+				desc = "loc_lasersplus_generic_flash_subheader_desc",
+				callback = "callback_lasersplus_header_dummy",
+				menu_id = parent_menu_id,
+				disabled = true
+			})
+			add_menu_option("divider",{
+				id = "lasersplus_menu_divider_flash_" .. user_type,
+				size = 2,
+				menu_id = parent_menu_id
+			})
 			
 			local callback_id_flash_display_mode = "callback_lasersplus_flash_display_mode_" .. user_type
 			MenuCallbackHandler[callback_id_flash_display_mode] = create_setting_changed_callback(user_type,"flashlight","mode","number")

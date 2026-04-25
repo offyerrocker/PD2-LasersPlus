@@ -61,6 +61,8 @@
 	"loc_lasersplus_menu_turret_header_title":"[Turret Customization]",
 	"loc_lasersplus_menu_turret_header_desc":"Change the appearance of SWAT Turret lasers below",
 	
+	"loc_lasersplus_generic_flash_subheader_title":"Flashlight settings",
+	"loc_lasersplus_generic_flash_subheader_desc":"The below options apply to flashlights only.",
 	"loc_lasersplus_generic_flash_colorpicker_title":"Customize Flashlight Color...",
 	"loc_lasersplus_generic_flash_colorpicker_desc":"Opens the Color Picker menu.",
 	"loc_lasersplus_generic_flash_colorslider_r_title":"Red value",
@@ -78,6 +80,8 @@
 	"loc_lasersplus_generic_flash_strobeenabled_title":"Strobe Enabled",
 	"loc_lasersplus_generic_flash_strobeenabled_desc":"Lets your flashlight shift through color hues in a predetermined pattern.",
 	
+	"loc_lasersplus_generic_laser_subheader_title":"Laser settings",
+	"loc_lasersplus_generic_laser_subheader_desc":"The below options apply to lasers only.",
 	"loc_lasersplus_generic_laser_colorpicker_title":"Customize Laser Color...",
 	"loc_lasersplus_generic_laser_colorpicker_desc":"Opens the Color Picker menu.",
 	"loc_lasersplus_generic_laser_colorslider_r_title":"Red value",
