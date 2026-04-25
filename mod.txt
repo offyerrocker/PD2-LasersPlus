@@ -10,7 +10,7 @@
 	"hooks" : [
 		{
 			"hook_id" : "lib/setups/setup",
-			"script_path" : "lasersplus_core.lua"
+			"script_path" : "req/lasersplus_core.lua"
 		},
 		{
 			"hook_id" : "lib/managers/menumanager",
