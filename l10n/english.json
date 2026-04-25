@@ -42,6 +42,8 @@
 	"loc_lasersplus_gadget_multigadget_mode_multicycle" : "Multi-Cycle",
 	"loc_lasersplus_gadget_multigadget_mode_everything" : "EVERYTHING!",
 	
+	"loc_lasersplus_qol_blackmarket_colorpicker_title" : "Enable Colorpicker in Blackmarket",
+	"loc_lasersplus_qol_blackmarket_colorpicker_desc" : "Lets you use a colorpicker interface when editing a laser/flashlight attachment.\nRequires Colorpicker mod.",
 	
 	"loc_lasersplus_qol_defaultgadget_reticle_type_title" : "Default Reticle: Type",
 	"loc_lasersplus_qol_defaultgadget_reticle_type_desc" : "Change the default reticle image for newly-purchased sight attachments",
@@ -116,5 +118,11 @@
 	"loc_lasersplus_laser_update_override_desc" : "Enables the Accurate Lasers and Laser Radius options.\nYou should disable this if you encounter conflicts with other laser mods.",
 	"loc_lasersplus_flash_update_override_title" : "Enable Flashlight Glow Tweaks",
 	"loc_lasersplus_flash_update_override_desc" : "Enables the Flashlight Fog Effect Alpha option.\nYou should disable this if you encounter conflicts with other flashlight mods.",
+	
+	"menu_lfc_dialogue_choice_title" : "Gadget Color Customization",
+	"menu_lfc_dialogue_choice_desc" : "Choose a gadget to customize.",
+	"menu_lfc_choice_laser" : "Laser",
+	"menu_lfc_choice_flashlight" : "Flashlight",
+	"menu_lfc_choice_vanilla" : "Use the old customizer"
 	
 }

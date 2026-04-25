@@ -721,6 +721,19 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		menu_id = "lasersplus_menu_general"
 	})
 	
+	MenuCallbackHandler.callback_lasersplus_qol_blackmarket_colorpicker = function(self,item)
+		LasersPlus:ChangeSetting("feature_enabled_qol_blackmarket_colorpicker",item:value() == "on")
+		LasersPlus:SaveSettings()
+	end
+	add_menu_option("toggle",{
+		id = "lasersplus_qol_blackmarket_colorpicker",
+		title = "loc_lasersplus_qol_blackmarket_colorpicker_title",
+		desc = "loc_lasersplus_qol_blackmarket_colorpicker_desc",
+		callback = "callback_lasersplus_qol_blackmarket_colorpicker",
+		value = LasersPlus.settings.feature_enabled_qol_blackmarket_colorpicker,
+		menu_id = "lasersplus_menu_qol"
+	})
+	
 	
 	
 	

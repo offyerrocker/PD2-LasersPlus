@@ -29,10 +29,12 @@ LasersPlus.default_settings = {
 	feature_enabled_laser_override = true, -- if true, allows changing laser beam and dot width, but requires overriding laser update (possibly incompatible with other mods)
 	feature_enabled_flashlight_override = true, -- if true, allows changing flashlight glow opacity, but requires overriding flashlight set_color (possibly incompatible with other mods)
 	
+	
 	feature_enabled_laser_accurate = false, -- if true, weapon laser more closely follows the crosshair (weapon position)
 	
 	feature_enabled_laser_redfilter = true,
 	feature_enabled_qol_defaultgadget = true,
+	feature_enabled_qol_blackmarket_colorpicker = true,
 	
 	feature_state_gadget_multigadget = 2,
 	
@@ -1078,6 +1080,13 @@ function LasersPlus:GetDefaultColorpickerPalettes()
 	return result
 end
 
+
+function LasersPlus:LoadConfig()
+
+end
+function LasersPlus:SaveConfig()
+	
+end
 
 function LasersPlus:GetSettingPrefix(gadget_type,user_type)
 	if gadget_type == "laser" then
