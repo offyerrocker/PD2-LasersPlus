@@ -95,6 +95,13 @@
 	"loc_lasersplus_turretatt_laser_colorslider_g_title":"Green value",
 	"loc_lasersplus_turretatt_laser_colorslider_g_desc":"Amount of green in the laser color",
 	"loc_lasersplus_turretatt_laser_colorslider_b_title":"Blue value",
-	"loc_lasersplus_turretatt_laser_colorslider_b_desc":"Amount of blue in the laser color"
+	"loc_lasersplus_turretatt_laser_colorslider_b_desc":"Amount of blue in the laser color",
+	
+	"loc_lasersplus_laser_accurate_title" : "Accurate Lasers",
+	"loc_lasersplus_laser_accurate_desc" : "Laser beam cylinder points towards actual bullet direction instead of viewmodel weapon direction.",
+	"loc_lasersplus_laser_update_override_title" : "Enable Laser Radius/Accuracy Tweaks",
+	"loc_lasersplus_laser_update_override_desc" : "Enables the Accurate Lasers and Laser Radius options.\nYou should disable this if you encounter conflicts with other laser mods.",
+	"loc_lasersplus_flash_update_override_title" : "Enable Flashlight Glow Tweaks",
+	"loc_lasersplus_flash_update_override_desc" : "Enables the Flashlight Fog Effect Alpha option.\nYou should disable this if you encounter conflicts with other flashlight mods.",
 	
 }
