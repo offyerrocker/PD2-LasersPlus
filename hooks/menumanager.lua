@@ -37,14 +37,6 @@ Hooks:Add("MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(
 		LasersPlus:ChangeSetting("feature_enabled_qol_defaultgadget",item:value() == "on")
 		LasersPlus:SaveSettings()
 	end
-	MenuCallbackHandler.callback_lasersplus_gadget_multigadget = function(self,item)
-		LasersPlus:ChangeSetting("feature_enabled_gadget_multigadget",item:value() == "on")
-		LasersPlus:SaveSettings()
-	end
-	MenuCallbackHandler.callback_lasersplus_gadget_overload = function(self,item)
-		LasersPlus:ChangeSetting("feature_enabled_gadget_overload",item:value() == "on")
-		LasersPlus:SaveSettings()
-	end
 	
 	MenuCallbackHandler.callback_lasersplus_laser_accurate = function(self,item)
 		LasersPlus:ChangeSetting("feature_enabled_laser_accurate",item:value() == "on")
@@ -652,23 +644,55 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 	end
 
 
-	add_menu_option("toggle",{
-		id = "lasersplus_gadget_multigadget",
-		title = "loc_lasersplus_gadget_multigadget_title",
-		desc = "loc_lasersplus_gadget_multigadget_desc",
-		callback = "callback_lasersplus_gadget_multigadget",
-		value = LasersPlus.settings.feature_enabled_gadget_multigadget,
+	add_menu_option("divider",{
+		id = "lasersplus_qol_divider_1",
+		size = 4,
 		menu_id = "lasersplus_menu_qol"
 	})
-
-	add_menu_option("toggle",{
-		id = "lasersplus_gadget_overload",
-		title = "loc_lasersplus_gadget_overload_title",
-		desc = "loc_lasersplus_gadget_overload_desc",
-		callback = "callback_lasersplus_gadget_overload",
-		value = LasersPlus.settings.feature_enabled_gadget_overload,
+	MenuCallbackHandler.callback_gadget_info_multigadget = function(self,item)
+		QuickMenu:new(managers.localization:text("loc_lasersplus_dialog_gadget_multigadget_title"),managers.localization:text("loc_lasersplus_dialog_gadget_multigadget_desc",{
+			BTN_GADGET = managers.localization:btn_macro("weapon_gadget", true)
+		}),{
+			{
+				text = managers.localization:text("dialog_ok"),
+				is_cancel_button = true,
+				is_focused_button = true
+			}
+		},true)
+	end
+	add_menu_option("button",{
+		id = "lasersplus_gadget_info_multigadget",
+		title = "loc_lasersplus_button_gadget_multigadget_title",
+		desc = "loc_lasersplus_button_gadget_multigadget_desc",
+		callback = "callback_gadget_info_multigadget",
 		menu_id = "lasersplus_menu_qol"
 	})
+	
+	MenuCallbackHandler.callback_lasersplus_gadget_multigadget_mode = function(self,item)
+		LasersPlus:ChangeSetting("feature_state_gadget_multigadget",tonumber(item:value()))
+		LasersPlus:SaveSettings()
+	end
+	local callback_id_multigadget_mode = "callback_lasersplus_gadget_multigadget_mode"
+	add_menu_option("multiple_choice",{
+		id = "lasersplus_gadget_multigadget_mode",
+		title = "loc_lasersplus_gadget_multigadget_mode_title",
+		desc = "loc_lasersplus_gadget_multigadget_mode_desc",
+		callback = callback_id_multigadget_mode,
+		items = {
+			"loc_lasersplus_gadget_multigadget_mode_vanilla",
+			"loc_lasersplus_gadget_multigadget_mode_multicycle",
+			"loc_lasersplus_gadget_multigadget_mode_everything"
+		},
+		value = LasersPlus.settings.feature_state_gadget_multigadget,
+		menu_id = "lasersplus_menu_qol"
+	})
+	add_menu_option("divider",{
+		id = "lasersplus_qol_divider_1",
+		size = 4,
+		menu_id = "lasersplus_menu_qol"
+	})
+	
+	
 	
 	add_menu_option("toggle",{
 		id = "lasersplus_laser_accurate",

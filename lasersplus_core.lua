@@ -33,7 +33,9 @@ LasersPlus.default_settings = {
 	
 	feature_enabled_laser_redfilter = true,
 	feature_enabled_qol_defaultgadget = true,
-	feature_enabled_gadget_multigadget = true,
+	
+	feature_state_gadget_multigadget = 2,
+	
 	feature_enabled_gadget_overload = true,
 	qol_defaultgadget_sight_color = 1,
 	qol_defaultgadget_sight_type = 1,
@@ -298,13 +300,6 @@ function LasersPlus:IsLaserRedFilterEnabled()
 	return self.settings.feature_enabled_laser_redfilter
 end
 
-function LasersPlus:IsMultiGadgetEnabled()
-	return self.settings.feature_enabled_gadget_multigadget
-end
-
-function LasersPlus:IsGadgetOverloadEnabled()
-	return self.settings.feature_enabled_gadget_overload
-end
 
 -- combined getter for feature: default sight gadget, default laser/flashlight color
 function LasersPlus:IsQOLDefaultGadgetEnabled()
@@ -560,13 +555,18 @@ function LasersPlus:convert_save_data(settings_from_file)
 					-- because the enabled_blackmarket_qol flag is supposed to be a category that encompasses multiple tweaks
 				end
 				
-				new_settings.feature_enabled_gadget_multigadget			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_multigadget,new_settings.feature_enabled_gadget_multigadget)
-				
-				new_settings.feature_enabled_gadget_overload			= apply_bool_with_fallback(old.enabled_mod_master and old.enabled_gadget_overload,new_settings.feature_enabled_gadget_overload)
-				
 				new_settings.qol_defaultgadget_sight_color				= apply_bool_with_fallback(old.enabled_mod_master and old.sight_color,new_settings.blackmarket_qol_defaultgadget_sight_color)
 				new_settings.qol_defaultgadget_sight_type				= apply_bool_with_fallback(old.enabled_mod_master and old.sight_type,new_settings.blackmarket_qol_defaultgadget_sight_type)
 				
+				if old.enabled_mod_master then 
+					if old.enabled_multigadget then
+						new_settings.feature_state_gadget_multigadget	= 2
+					elseif old.enabled_gadget_overload then
+						new_settings.feature_state_gadget_multigadget	= 3
+					end
+				else
+					new_settings.feature_state_gadget_multigadget		= 1
+				end
 				
 	-- ====================================
 	-- individual laser/flashlight settings
@@ -1175,8 +1175,6 @@ end
 function LasersPlus:ShowColorpicker(gadget_type,user_type)
 	if ColorPicker and self._colorpicker then 
 		local template_data = self:GetGadgetTemplate(gadget_type,user_type)
-		
-		
 		
 		self._colorpicker:Show({
 			color = template_data.color,

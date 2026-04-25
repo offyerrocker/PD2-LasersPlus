@@ -30,10 +30,19 @@
 	"loc_lasersplus_laser_redfilter_desc":"Teammates' Lasers with too much red will be changed to your Teammate Laser Color.",
 	"loc_lasersplus_qol_defaultgadget_title":"Auto-Configure Attachments",
 	"loc_lasersplus_qol_defaultgadget_desc":"Automatically sets newly-purchased laser/flashlight colors and sight attachment textures/colors",
-	"loc_lasersplus_gadget_multigadget_title":"Enable Multiple Simultaneous Gadgets",
-	"loc_lasersplus_gadget_multigadget_desc":"Allows toggling multiple gadgets, and adds a separate keybind for sight gadgets such as the 45 Degree Sights or Sight Magnifiers.",
-	"loc_lasersplus_gadget_overload_title":"Gadget Overload",
-	"loc_lasersplus_gadget_overload_desc":"If true, turns on all laser/flashlight gadgets at once on keypress.",
+	
+	"loc_lasersplus_gadget_multigadget_mode_title" : "Multi-Gadget Mode",
+	"loc_lasersplus_gadget_multigadget_mode_desc" : "Choose \"Activate Multiple Gadgets\" behavior.",
+	"loc_lasersplus_button_gadget_multigadget_title":"About Multi-Gadget Modes",
+	"loc_lasersplus_button_gadget_multigadget_desc":"Click to show a description of the Multi-Gadget options.",
+	"loc_lasersplus_dialog_gadget_multigadget_title":"About Multi-Gadget Modes",
+	"loc_lasersplus_dialog_gadget_multigadget_desc":"Disabled: Only one laser or flashlight can be active at once.\n\nMulti-Cycle: Pressing your \"Gadget On/Off\" keybind $BTN_GADGET will cycle through every combination of your available gadgets in sequence.\n\nEVERYTHING!: Pressing your \"Gadget On/Off\" keybind $BTN_GADGET will toggle every available gadget at the same time.",
+	
+	"loc_lasersplus_gadget_multigadget_mode_vanilla" : "Disabled",
+	"loc_lasersplus_gadget_multigadget_mode_multicycle" : "Multi-Cycle",
+	"loc_lasersplus_gadget_multigadget_mode_everything" : "EVERYTHING!",
+	
+	
 	"loc_lasersplus_qol_defaultgadget_reticle_type_title" : "Default Reticle: Type",
 	"loc_lasersplus_qol_defaultgadget_reticle_type_desc" : "Change the default reticle image for newly-purchased sight attachments",
 	"loc_lasersplus_qol_defaultgadget_reticle_color_title" : "Default Reticle: Color",
