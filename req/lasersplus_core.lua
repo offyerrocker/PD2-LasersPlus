@@ -807,6 +807,7 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(send
 	
 		local peer = managers.network:session():peer(sender)
 		if peer then 
+			LasersPlus:Print("Received data from peer",sender,":",body)
 			LasersPlus:StoreTeamColor(peer,body,"combined",nil)
 		end
 		
@@ -967,7 +968,7 @@ function LasersPlus:SyncTemplatesToPeers()
 	else
 		local template_data = self:GetGadgetTemplate("laser","user")
 		if template_data and template_data.mode ~= 1 then
-			laser_body = self:serialize_flash_template(template_data)
+			laser_body = self:serialize_laser_template(template_data)
 		else
 			laser_body = "0"
 		end
@@ -979,7 +980,7 @@ function LasersPlus:SyncTemplatesToPeers()
 	else
 		local template_data = self:GetGadgetTemplate("flashlight","user")
 		if template_data and template_data.mode ~= 1 then
-			flash_body = self:serialize_laser_template(template_data)
+			flash_body = self:serialize_flash_template(template_data)
 		else
 			flash_body = "0"
 		end

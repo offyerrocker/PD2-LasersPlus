@@ -266,7 +266,7 @@ elseif RequiredScript == "lib/units/weapons/weaponlaser" then
 						
 						if self._lp_peerid then -- and self._lp_user_type == "team" then
 							local synced_data = LasersPlus:GetSyncedDataByPeerId(self._lp_peerid)
-							local gadget_data = synced_data.gadget[string.match(tostring(self),"0x%x+")]
+							local gadget_data = synced_data and synced_data.gadget[string.match(tostring(self),"0x%x+")]
 							local color = gadget_data and Color(gadget_data.color)
 							if color then
 								if LasersPlus:IsLaserRedFilterEnabled() and not LasersPlus:CheckRedLaserFilter(color) then
