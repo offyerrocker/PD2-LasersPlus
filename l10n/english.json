@@ -98,10 +98,10 @@
 	"loc_lasersplus_generic_laser_strobeenabled_desc":"Lets your laser shift through color hues in a predetermined pattern.",
 	
 	
-	"loc_lasersplus_generic_laser_display_mode_title" : "Display Mode",
-	"loc_lasersplus_generic_laser_display_mode_desc" : "Choose whether this laser is enabled.",
-	"loc_lasersplus_generic_flash_display_mode_title" : "Display Mode",
-	"loc_lasersplus_generic_flash_display_mode_desc" : "Choose whether this flashlight is enabled.",
+	"loc_lasersplus_generic_laser_display_mode_title" : "Override Color",
+	"loc_lasersplus_generic_laser_display_mode_desc" : "Choose whether to override the laser's color.",
+	"loc_lasersplus_generic_flash_display_mode_title" : "Override Color",
+	"loc_lasersplus_generic_flash_display_mode_desc" : "Choose whether to override the flashlight's color.",
 	
 	"loc_lasersplus_gadget_display_mode_option_vanilla" : "No Change",
 	"loc_lasersplus_gadget_display_mode_option_customstatic" : "Custom Color",
