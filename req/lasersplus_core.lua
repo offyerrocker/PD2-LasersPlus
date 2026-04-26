@@ -10,7 +10,7 @@ LasersPlus._settings_path = LasersPlus._save_directory .. "lasersplus_settings.j
 LasersPlus.STROBE_NETWORKING_STRING_TEMPLATE = "$DURATION:$COLORS"
 
 LasersPlus._config_path = LasersPlus._save_directory .. "lasersplus_extra_config.ini"
-LasersPlus._util_LIP = LasersPlus._util_LIP or dofile(LasersPlus._mod_path .. "req/LIP.lua")
+LasersPlus._util_LIP = LasersPlus._util_LIP or blt.vm.dofile(LasersPlus._mod_path .. "req/LIP.lua")
 
 LasersPlus.NETWORK_EVENT_IDS = {
 	LASERSPLUS_SYNC_GADGET_ALL	 = "LasersPlus_sync_gadgets"
