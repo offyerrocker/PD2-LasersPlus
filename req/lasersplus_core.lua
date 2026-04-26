@@ -484,6 +484,22 @@ function LasersPlus:SetupTurretMadGadgetTemplates()
 	laser_templates.turretmad.strobe_data = self:StringToStrobe(self.settings.turretmad_laser_strobe_string)
 end
 
+function LasersPlus:CheckRedLaserFilter(col) 
+--returns false if contains too much red, or invalid data
+--returns true if does not contain too much red, or if filter option is off
+	if not col then
+		return false --sanity checker? i 'ardly even know 'er
+	end
+	local r = col.r or col.red
+	local g = col.g or col.green
+	local b = col.b or col.blue
+	local threshold = self.config.redfilter_threshold or self.default_config.redfilter_threshold
+	if r * threshold > g + b then --if red is n% larger than green+blue
+		return false
+	end
+	return true
+	
+end
 
 -- ===================================== I/O ==========================================
 
@@ -791,7 +807,7 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(send
 	
 		local peer = managers.network:session():peer(sender)
 		if peer then 
-			LasersPlus:StorePeerColor(peer,body,"combined",nil)
+			LasersPlus:StoreTeamColor(peer,body,"combined",nil)
 		end
 		
 	--[[
@@ -799,14 +815,14 @@ Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(send
 		
 		local peer = managers.network:session():peer(sender)
 		if peer then 
-			LasersPlus:StorePeerColor(peer,body,"laser",nil)
+			LasersPlus:StoreTeamColor(peer,body,"laser",nil)
 		end
 		
 	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH then
 		
 		local peer = managers.network:session():peer(sender)
 		if peer then 
-			LasersPlus:StorePeerColor(peer,body,"flashlight",nil)
+			LasersPlus:StoreTeamColor(peer,body,"flashlight",nil)
 		end
 		--]]
 	end
@@ -979,6 +995,17 @@ function LasersPlus:SyncTemplatesToPeers()
 	--LuaNetworking:SendToPeers(self.NETWORK_EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH,flash_body)
 end
 
+function LasersPlus:GetSyncedDataByPeerId(peer_id)
+	local peer = peer_id and managers.network:session():peer(peer_id)
+	if peer then
+		local uid = peer:user_id()
+		local stored_colors = uid and LasersPlus._gadget_colors_by_user[uid]
+		if stored_colors then
+			return stored_colors
+		end
+	end
+end
+
 -- store synced LP color from LP modded teammate 
 function LasersPlus:StoreTeamColor(peer,data,type_id,unit)
 	local uid = peer:user_id()
@@ -1000,8 +1027,8 @@ function LasersPlus:StoreTeamColor(peer,data,type_id,unit)
 	if type_id == "vanilla" then
 		local gadget_base = unit and alive(unit) and unit:base()
 		if gadget_base then
-			local key = string.match(tostring(gadget_base),"0.*")
-			stored_colors.gadget[key] = {
+			local ukey = string.match(tostring(gadget_base),"0x%x+")
+			stored_colors.gadget[ukey] = {
 				color = string.format("%02x%02x%02x",data.r,data.g,data.b),
 				alpha = math.max(red,green,blue)/255
 			}

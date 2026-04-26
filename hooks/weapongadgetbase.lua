@@ -242,7 +242,7 @@ elseif RequiredScript == "lib/units/weapons/weaponlaser" then
 	function WeaponLaser:set_lasersplus_type(user_type,...)
 		WeaponLaser.super.set_lasersplus_type(self,user_type,...)
 		local function f_setup(template_data,_user_type,peer_id)
-			if (_user_type == true or _user_type == self._lp_user_type) and (_user_type ~= "team" or self._is_npc or peer_id == true or peer_id == self._lp_peerid) then
+			if (_user_type == true or _user_type == self._lp_user_type) then -- and (_user_type ~= "team" or self._is_npc or peer_id == true or peer_id == self._lp_peerid) then
 				if alive(self._light) then
 					if template_data and template_data.mode ~= 1 then
 						local color
@@ -263,6 +263,20 @@ elseif RequiredScript == "lib/units/weapons/weaponlaser" then
 						self:setup_lp_strobe_data(template_data)
 					else
 						self._lp_data = nil
+						
+						if self._lp_peerid then -- and self._lp_user_type == "team" then
+							local synced_data = LasersPlus:GetSyncedDataByPeerId(self._lp_peerid)
+							local gadget_data = synced_data.gadget[string.match(tostring(self),"0x%x+")]
+							local color = gadget_data and Color(gadget_data.color)
+							if color then
+								if LasersPlus:IsLaserRedFilterEnabled() and not LasersPlus:CheckRedLaserFilter(color) then
+									color = template_data and template_data.color or self._themes.default.brush or Color.green
+								end
+								self:set_color(color)
+							end
+						end
+						-- else, do nothing (let basegame handle colors)
+						
 					end
 				end
 			end

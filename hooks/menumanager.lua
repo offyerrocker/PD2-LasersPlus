@@ -1,13 +1,15 @@
 
+-- warning: here be dragons
+
 Hooks:Add("MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(menu_manager)
 	LasersPlus:LoadSettings()
 	LasersPlus:SetupAllGadgetTemplates()
 	
 	LasersPlus:CreateColorpicker()
 	
-	
+	--ze placeholders, zhey do nothing
+	-- (they are load-bearing though)
 	MenuCallbackHandler.callback_lasersplus_header_dummy = function() end
-	
 	MenuCallbackHandler.callback_lasersplus_menu_user_focused = function(self,focused)
 	end
 	MenuCallbackHandler.callback_lasersplus_menu_team_focused = function(self,focused)
@@ -36,6 +38,35 @@ Hooks:Add("MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(
 	MenuCallbackHandler.callback_lasersplus_qol_defaultgadget = function(self,item)
 		LasersPlus:ChangeSetting("feature_enabled_qol_defaultgadget",item:value() == "on")
 		LasersPlus:SaveSettings()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_qol_blackmarket_colorpicker = function(self,item)
+		LasersPlus:ChangeSetting("feature_enabled_qol_blackmarket_colorpicker",item:value() == "on")
+		LasersPlus:SaveSettings()
+	end
+	MenuCallbackHandler.callback_lasersplus_qol_defaultgadget_reticle_texture = function(self,item)
+		LasersPlus:ChangeSetting("qol_defaultgadget_sight_type",tonumber(item:value()))
+		LasersPlus:SaveSettings()
+	end
+	MenuCallbackHandler.callback_lasersplus_qol_defaultgadget_reticle_color = function(self,item)
+		LasersPlus:ChangeSetting("qol_defaultgadget_sight_color",tonumber(item:value()))
+		LasersPlus:SaveSettings()
+	end
+	
+	MenuCallbackHandler.callback_lasersplus_gadget_multigadget_mode = function(self,item)
+		LasersPlus:ChangeSetting("feature_state_gadget_multigadget",tonumber(item:value()))
+		LasersPlus:SaveSettings()
+	end
+	MenuCallbackHandler.callback_gadget_info_multigadget = function(self,item)
+		QuickMenu:new(managers.localization:text("loc_lasersplus_dialog_gadget_multigadget_title"),managers.localization:text("loc_lasersplus_dialog_gadget_multigadget_desc",{
+			BTN_GADGET = managers.localization:btn_macro("weapon_gadget", true)
+		}),{
+			{
+				text = managers.localization:text("dialog_ok"),
+				is_cancel_button = true,
+				is_focused_button = true
+			}
+		},true)
 	end
 	
 	MenuCallbackHandler.callback_lasersplus_laser_accurate = function(self,item)
@@ -571,6 +602,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		end
 	end
 	
+	-- add menu subheaders
 	for menu_id,menu_data in pairs(submenus) do 
 		add_menu_option("button",{
 			id = menu_id .. "_header",
@@ -588,6 +620,11 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		})
 	end
 	
+	
+	------------------------------------
+	------------- General menu ---------
+	------------------------------------
+	
 	add_menu_option("toggle",{
 		id = "lasersplus_gadget_network_sync",
 		title = "loc_lasersplus_gadget_network_sync_title",
@@ -597,6 +634,38 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		menu_id = "lasersplus_menu_general"
 	})
 	
+	add_menu_option("divider",{
+		id = "lasersplus_general_divider_1",
+		size = 8,
+		menu_id = "lasersplus_menu_general"
+	})
+	
+	add_menu_option("toggle",{
+		id = "lasersplus_laser_update_override",
+		title = "loc_lasersplus_laser_update_override_title",
+		desc = "loc_lasersplus_laser_update_override_desc",
+		callback = "callback_lasersplus_laser_update_override",
+		value = LasersPlus.settings.feature_enabled_laser_override,
+		menu_id = "lasersplus_menu_general"
+	})
+	
+	add_menu_option("toggle",{
+		id = "lasersplus_flash_update_override",
+		title = "loc_lasersplus_flash_update_override_title",
+		desc = "loc_lasersplus_flash_update_override_desc",
+		callback = "callback_lasersplus_flash_update_override",
+		value = LasersPlus.settings.feature_enabled_flashlight_override,
+		menu_id = "lasersplus_menu_general"
+	})
+	
+	
+	
+	
+	------------------------------------
+	------------- QOL menu -------------
+	------------------------------------
+	
+	
 	add_menu_option("toggle",{
 		id = "lasersplus_laser_redfilter",
 		title = "loc_lasersplus_laser_redfilter_title",
@@ -605,7 +674,44 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		value = LasersPlus.settings.feature_enabled_laser_redfilter,
 		menu_id = "lasersplus_menu_qol"
 	})
-
+	
+	add_menu_option("divider",{
+		id = "lasersplus_qol_divider_1",
+		size = 8,
+		menu_id = "lasersplus_menu_qol"
+	})
+	
+	add_menu_option("toggle",{
+		id = "lasersplus_laser_accurate",
+		title = "loc_lasersplus_laser_accurate_title",
+		desc = "loc_lasersplus_laser_accurate_desc",
+		callback = "callback_lasersplus_laser_accurate",
+		value = LasersPlus.settings.feature_enabled_laser_accurate,
+		menu_id = "lasersplus_menu_qol"
+	})
+	
+	add_menu_option("divider",{
+		id = "lasersplus_qol_divider_2",
+		size = 8,
+		menu_id = "lasersplus_menu_qol"
+	})
+	
+	add_menu_option("toggle",{
+		id = "lasersplus_qol_blackmarket_colorpicker",
+		title = "loc_lasersplus_qol_blackmarket_colorpicker_title",
+		desc = "loc_lasersplus_qol_blackmarket_colorpicker_desc",
+		callback = "callback_lasersplus_qol_blackmarket_colorpicker",
+		value = LasersPlus.settings.feature_enabled_qol_blackmarket_colorpicker,
+		menu_id = "lasersplus_menu_qol"
+	})
+	
+	add_menu_option("divider",{
+		id = "lasersplus_qol_divider_3",
+		size = 8,
+		menu_id = "lasersplus_menu_qol"
+	})
+	
+	
 	do 
 		add_menu_option("toggle",{
 			id = "lasersplus_qol_defaultgadget",
@@ -640,22 +746,11 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 			-- yes, it's misspelled as "recticle"
 		end
 		
-		local callback_id_defaultgadget_texture = "callback_lasersplus_qol_defaultgadget_reticle_texture"
-		MenuCallbackHandler[callback_id_defaultgadget_texture] = function(self,item)
-			LasersPlus:ChangeSetting("qol_defaultgadget_sight_type",tonumber(item:value()))
-			LasersPlus:SaveSettings()
-		end
-		local callback_id_defaultgadget_color = "callback_lasersplus_qol_defaultgadget_reticle_color"
-		MenuCallbackHandler[callback_id_defaultgadget_color] = function(self,item)
-			LasersPlus:ChangeSetting("qol_defaultgadget_sight_color",tonumber(item:value()))
-			LasersPlus:SaveSettings()
-		end
-		
 		add_menu_option("multiple_choice",{
 			id = "lasersplus_qol_defaultgadget_reticle_type",
 			title = "loc_lasersplus_qol_defaultgadget_reticle_type_title",
 			desc = "loc_lasersplus_qol_defaultgadget_reticle_type_desc",
-			callback = callback_id_defaultgadget_texture,
+			callback = "callback_lasersplus_qol_defaultgadget_reticle_texture",
 			items = reticle_textures,
 			value = LasersPlus.settings.qol_defaultgadget_sight_type,
 			menu_id = "lasersplus_menu_qol"
@@ -664,30 +759,19 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 			id = "lasersplus_qol_defaultgadget_reticle_color",
 			title = "loc_lasersplus_qol_defaultgadget_reticle_color_title",
 			desc = "loc_lasersplus_qol_defaultgadget_reticle_color_desc",
-			callback = callback_id_defaultgadget_color,
+			callback = "callback_lasersplus_qol_defaultgadget_reticle_color",
 			items = reticle_colors,
 			value = LasersPlus.settings.qol_defaultgadget_sight_color,
 			menu_id = "lasersplus_menu_qol"
 		})
 	end
 
-
 	add_menu_option("divider",{
-		id = "lasersplus_qol_divider_1",
-		size = 4,
+		id = "lasersplus_qol_divider_4",
+		size = 8,
 		menu_id = "lasersplus_menu_qol"
 	})
-	MenuCallbackHandler.callback_gadget_info_multigadget = function(self,item)
-		QuickMenu:new(managers.localization:text("loc_lasersplus_dialog_gadget_multigadget_title"),managers.localization:text("loc_lasersplus_dialog_gadget_multigadget_desc",{
-			BTN_GADGET = managers.localization:btn_macro("weapon_gadget", true)
-		}),{
-			{
-				text = managers.localization:text("dialog_ok"),
-				is_cancel_button = true,
-				is_focused_button = true
-			}
-		},true)
-	end
+	
 	add_menu_option("button",{
 		id = "lasersplus_gadget_info_multigadget",
 		title = "loc_lasersplus_button_gadget_multigadget_title",
@@ -696,16 +780,12 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		menu_id = "lasersplus_menu_qol"
 	})
 	
-	MenuCallbackHandler.callback_lasersplus_gadget_multigadget_mode = function(self,item)
-		LasersPlus:ChangeSetting("feature_state_gadget_multigadget",tonumber(item:value()))
-		LasersPlus:SaveSettings()
-	end
-	local callback_id_multigadget_mode = "callback_lasersplus_gadget_multigadget_mode"
+	
 	add_menu_option("multiple_choice",{
 		id = "lasersplus_gadget_multigadget_mode",
 		title = "loc_lasersplus_gadget_multigadget_mode_title",
 		desc = "loc_lasersplus_gadget_multigadget_mode_desc",
-		callback = callback_id_multigadget_mode,
+		callback = "callback_lasersplus_gadget_multigadget_mode",
 		items = {
 			"loc_lasersplus_gadget_multigadget_mode_vanilla",
 			"loc_lasersplus_gadget_multigadget_mode_multicycle",
@@ -714,58 +794,15 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		value = LasersPlus.settings.feature_state_gadget_multigadget,
 		menu_id = "lasersplus_menu_qol"
 	})
-	add_menu_option("divider",{
-		id = "lasersplus_qol_divider_1",
-		size = 4,
-		menu_id = "lasersplus_menu_qol"
-	})
-	
-	
-	
-	add_menu_option("toggle",{
-		id = "lasersplus_laser_accurate",
-		title = "loc_lasersplus_laser_accurate_title",
-		desc = "loc_lasersplus_laser_accurate_desc",
-		callback = "callback_lasersplus_laser_accurate",
-		value = LasersPlus.settings.feature_enabled_laser_accurate,
-		menu_id = "lasersplus_menu_qol"
-	})
-	
-	add_menu_option("toggle",{
-		id = "lasersplus_laser_update_override",
-		title = "loc_lasersplus_laser_update_override_title",
-		desc = "loc_lasersplus_laser_update_override_desc",
-		callback = "callback_lasersplus_laser_update_override",
-		value = LasersPlus.settings.feature_enabled_laser_override,
-		menu_id = "lasersplus_menu_general"
-	})
-	
-	add_menu_option("toggle",{
-		id = "lasersplus_flash_update_override",
-		title = "loc_lasersplus_flash_update_override_title",
-		desc = "loc_lasersplus_flash_update_override_desc",
-		callback = "callback_lasersplus_flash_update_override",
-		value = LasersPlus.settings.feature_enabled_flashlight_override,
-		menu_id = "lasersplus_menu_general"
-	})
-	
-	MenuCallbackHandler.callback_lasersplus_qol_blackmarket_colorpicker = function(self,item)
-		LasersPlus:ChangeSetting("feature_enabled_qol_blackmarket_colorpicker",item:value() == "on")
-		LasersPlus:SaveSettings()
-	end
-	add_menu_option("toggle",{
-		id = "lasersplus_qol_blackmarket_colorpicker",
-		title = "loc_lasersplus_qol_blackmarket_colorpicker_title",
-		desc = "loc_lasersplus_qol_blackmarket_colorpicker_desc",
-		callback = "callback_lasersplus_qol_blackmarket_colorpicker",
-		value = LasersPlus.settings.feature_enabled_qol_blackmarket_colorpicker,
-		menu_id = "lasersplus_menu_qol"
-	})
 	
 	
 	
 	
 	
+	
+	------------------------------------------------------------------------
+	------------- Laser/Flashlight options for each user_type --------------
+	------------------------------------------------------------------------
 	
 	build_laser_options("user","lasersplus_menu_user",{
 		laser=true,
@@ -816,7 +853,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "LasersPlus_MenuManagerPopulateCusto
 		header_desc = "loc_lasersplus_menu_turret_subheader_mad_desc"
 	})
 	
-	
+	-- build menu options in order
 	execute_queued_menus()
 end)
 
