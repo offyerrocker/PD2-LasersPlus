@@ -801,33 +801,34 @@ end
 -- ===================================== Networking ==========================================
 
 Hooks:Add("NetworkReceivedData", "NetworkReceivedData_lasersplus", function(sender, message, body)
-	local EVENT_IDS = LasersPlus.NETWORK_EVENT_IDS
-	
-	if message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_ALL then
-	
-		local peer = managers.network:session():peer(sender)
-		if peer then 
-			LasersPlus:Print("Received data from peer",sender,":",body)
-			LasersPlus:StoreTeamColor(peer,body,"combined",nil)
+	if LasersPlus:IsGadgetNetworkSyncEnabled() then
+		local EVENT_IDS = LasersPlus.NETWORK_EVENT_IDS
+		
+		if message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_ALL then
+		
+			local peer = managers.network:session():peer(sender)
+			if peer then 
+				LasersPlus:Print("Received data from peer",sender,":",body)
+				LasersPlus:StoreTeamColor(peer,body,"combined",nil)
+			end
+			
+		--[[
+		elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_LASER then
+			
+			local peer = managers.network:session():peer(sender)
+			if peer then 
+				LasersPlus:StoreTeamColor(peer,body,"laser",nil)
+			end
+			
+		elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH then
+			
+			local peer = managers.network:session():peer(sender)
+			if peer then 
+				LasersPlus:StoreTeamColor(peer,body,"flashlight",nil)
+			end
+			--]]
 		end
-		
-	--[[
-	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_LASER then
-		
-		local peer = managers.network:session():peer(sender)
-		if peer then 
-			LasersPlus:StoreTeamColor(peer,body,"laser",nil)
-		end
-		
-	elseif message == EVENT_IDS.LASERSPLUS_SYNC_GADGET_FLASH then
-		
-		local peer = managers.network:session():peer(sender)
-		if peer then 
-			LasersPlus:StoreTeamColor(peer,body,"flashlight",nil)
-		end
-		--]]
 	end
-	
 --[[
 	if message == LasersPlus.LuaNetID or message == LasersPlus.LegacyID then
 		local criminals_manager = managers.criminals
@@ -1087,6 +1088,22 @@ function LasersPlus:StoreTeamColor(peer,data,type_id,unit)
 		--stored_colors.flash_strobe = data.strobe
 --]]
 	end
+end
+
+-- specifically only clears modded lasersplus data;
+-- "vanilla" laser colors are retained
+function LasersPlus:ClearSyncedData()
+	for uid,data in pairs(self._gadget_colors_by_user) do 
+		data.sync_string = nil
+		data.laser_color = nil
+		data.laser_strobe = nil
+		data.laser_alpha = nil
+		data.flash_color = nil
+		data.flash_strobe = nil
+		data.flash_alpha = nil
+	end
+	Hooks:Call("OnLasersPlusSettingChanged_team_laser",self:GetGadgetTemplate("laser","team"),"team")
+	Hooks:Call("OnLasersPlusSettingChanged_team_flashlight",self:GetGadgetTemplate("flashlight","team"),"team")
 end
 
 -- get lobby player color (eg. host is green, player 2 is blue, player 3 is red, player 4 is orange)

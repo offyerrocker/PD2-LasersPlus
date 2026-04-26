@@ -30,6 +30,8 @@ Hooks:Add("MenuManagerInitialize", "LasersPlus_MenuManagerInitialize", function(
 	MenuCallbackHandler.callback_lasersplus_gadget_network_sync = function(self,item)
 		LasersPlus:ChangeSetting("feature_enabled_gadget_network_sync",item:value() == "on")
 		LasersPlus:SaveSettings()
+		
+		LasersPlus:ClearSyncedData()
 	end
 	MenuCallbackHandler.callback_lasersplus_laser_redfilter = function(self,item)
 		LasersPlus:ChangeSetting("feature_enabled_laser_redfilter",item:value() == "on")
