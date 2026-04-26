@@ -1031,7 +1031,7 @@ function LasersPlus:StoreTeamColor(peer,data,type_id,unit)
 			local ukey = string.match(tostring(gadget_base),"0x%x+")
 			stored_colors.gadget[ukey] = {
 				color = string.format("%02x%02x%02x",data.r,data.g,data.b),
-				alpha = math.max(red,green,blue)/255
+				alpha = math.max(data.r,data.g,data.b)/255 -- this probably shouldn't be used
 			}
 		end
 	elseif type_id == "combined" then
